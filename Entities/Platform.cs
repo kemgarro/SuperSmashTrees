@@ -20,10 +20,10 @@ namespace Entities
         {
             if (textures.Count == 0)
             {
-                textures.Add(Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Platforms\\ground_wood.png"));
-                textures.Add(Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Platforms\\ground_wood_small.png"));
-                textures.Add(Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Platforms\\ground_grass.png"));
-                textures.Add(Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Platforms\\ground_grass_small.png"));
+                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_wood.png"));
+                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_wood_small.png"));
+                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass.png"));
+                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass_small.png"));
             }
         }
 

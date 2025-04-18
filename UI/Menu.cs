@@ -20,7 +20,7 @@ namespace UI
 
         public Menu()
         {
-            fondo = Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Backgrounds\\MenuBackground.png");
+            fondo = Raylib.LoadTexture("Assets/Sprites/Backgrounds/MenuBackground.png");
         }
 
         public bool Mostrar()

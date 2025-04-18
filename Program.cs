@@ -15,7 +15,7 @@ class Program
 
         Raylib.SetTargetFPS(60);
 
-        Texture2D fondoJuego = Raylib.LoadTexture("C:\\Users\\garro\\OneDrive - Estudiantes ITCR\\Datos 1\\SuperSmashTrees\\SuperSmashTrees\\Assets\\Sprites\\Backgrounds\\GameBackground.png");
+        Texture2D fondoJuego = Raylib.LoadTexture("Assets/Sprites/Backgrounds/GameBackground.png");
 
         // Cargar texturas de plataformas
         Platform.LoadTextures();

@@ -1,54 +1,45 @@
-﻿using System;
+﻿using Raylib_cs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Raylib_cs;
-using System.Numerics;
 
-namespace Entities
+namespace SuperSmashTrees.Entities
 {
     public class Platform
     {
         public Rectangle Rect;
         private Texture2D texture;
+        private float scale;
 
-        // Cargar las texturas una sola vez
-        private static List<Texture2D> textures = new();
-
-        public static void LoadTextures()
-        {
-            if (textures.Count == 0)
-            {
-                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_wood.png"));
-                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_wood_small.png"));
-                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass.png"));
-                textures.Add(Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass_small.png"));
-            }
-        }
-
-        public Platform(float x, float y, float width, float height)
+        public Platform(float x, float y, float width, float height, Texture2D texture, float scale = 4f)
         {
             Rect = new Rectangle(x, y, width, height);
-
-            // Elegir textura aleatoria
-            Random rng = new Random(Guid.NewGuid().GetHashCode()); // más aleatorio
-            int index = rng.Next(textures.Count);
-            texture = textures[index];
+            this.texture = texture;
+            this.scale = scale;
         }
 
         public void Draw()
         {
-            Rectangle source = new Rectangle(0, 0, texture.Width, texture.Height);
-            Rectangle dest = Rect;
-            Vector2 origin = new Vector2(0, 0);
-            Raylib.DrawTexturePro(texture, source, dest, origin, 0, Color.White);
-        }
+            int tileWidth = texture.Width;
+            int tileHeight = texture.Height;
 
-        public static void UnloadTextures()
-        {
-            foreach (var tex in textures)
-                Raylib.UnloadTexture(tex);
+            int tilesToDraw = (int)(Rect.Width / (tileWidth * scale));
+
+            for (int i = 0; i < tilesToDraw; i++)
+            {
+                Rectangle source = new Rectangle(0, 0, tileWidth, tileHeight);
+                Rectangle dest = new Rectangle(
+                    Rect.X + i * tileWidth * scale,
+                    Rect.Y,
+                    tileWidth * scale,
+                    tileHeight * scale
+                );
+
+                Raylib.DrawTexturePro(texture, source, dest, Vector2.Zero, 0, Color.White);
+            }
         }
     }
 }

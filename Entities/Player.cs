@@ -1,43 +1,195 @@
-﻿using System;
+﻿using Raylib_cs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
-using Raylib_cs;
-using System.Numerics;
-
-namespace Entities
+namespace SuperSmashTrees.Entities
 {
     public class Player
     {
+        private Texture2D[] idleFrames;
+        private Texture2D[] runFrames;
+        private Texture2D[] jumpFrames;
+
+        private float animationTimer;
+        private int currentFrame;
+        private float frameTime = 0.07f;
+
+        private float gravity = 900f;
+        private float velocityY = 0f;
+        private bool isJumping = false;
+
+        private float jumpForce = -800f;
+
         public Vector2 Position;
-        public Color Color;
-        private float speed = 4f;
+        public float Speed = 300f;
 
-        private KeyboardKey up, down, left, right;
+        private string state = "IDLE"; // o "RUN"
+        private bool facingLeft = false;
 
-        public Player(Vector2 startPosition, Color color, KeyboardKey up, KeyboardKey down, KeyboardKey left, KeyboardKey right)
+        public Player(string idlePath, string runPath, string jumpPath, int idleCount, int runCount, int jumpCount, Vector2 startPosition)
         {
+            idleFrames = LoadFrames(idlePath, idleCount, "IDLE");
+            runFrames = LoadFrames(runPath, runCount, "RUN");
+            jumpFrames = LoadFrames(jumpPath, jumpCount, "JUMP");
+            int jumpLoopStart = jumpFrames.Length - 3; // últimos 3
             Position = startPosition;
-            Color = color;
-            this.up = up;
-            this.down = down;
-            this.left = left;
-            this.right = right;
         }
 
-        public void Update()
+        private Texture2D[] LoadFrames(string path, int count, string prefix)
         {
-            if (Raylib.IsKeyDown(up)) Position.Y -= speed;
-            if (Raylib.IsKeyDown(down)) Position.Y += speed;
-            if (Raylib.IsKeyDown(left)) Position.X -= speed;
-            if (Raylib.IsKeyDown(right)) Position.X += speed;
+            Texture2D[] frames = new Texture2D[count];
+            for (int i = 0; i < count; i++)
+            {
+                string framePath = $"{path}/{prefix}{i + 1}.png";
+                Texture2D tex = Raylib.LoadTexture(framePath);
+                Raylib.SetTextureFilter(tex, TextureFilter.Point);
+                frames[i] = tex;
+            }
+            return frames;
+        }
+
+        public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
+                   KeyboardKey rightKey, KeyboardKey leftKey, KeyboardKey jumpKey)
+        {
+            bool moving = false;
+            string prevState = state;
+
+            if (Raylib.IsKeyDown(rightKey))
+            {
+                Position.X += Speed * delta;
+                state = "RUN";
+                facingLeft = false;
+                moving = true;
+            }
+            else if (Raylib.IsKeyDown(leftKey))
+            {
+                Position.X -= Speed * delta;
+                state = "RUN";
+                facingLeft = true;
+                moving = true;
+            }
+
+            if (Raylib.IsKeyPressed(jumpKey) && !isJumping)
+            {
+                velocityY = jumpForce;
+                isJumping = true;
+                state = "JUMP";
+            }
+
+            // Aplicar gravedad
+            velocityY += gravity * delta;
+            Position.Y += velocityY * delta;
+
+            // Revisar colisiones con plataformas (solo por arriba)
+            Rectangle playerRect = new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
+            bool onPlatform = false;
+
+            for (int i = 0; i < platforms.Count; i++)
+            {
+                Rectangle plat = platforms.Get(i).Rect;
+                bool falling = velocityY >= 0;
+
+                if (falling && Raylib.CheckCollisionRecs(playerRect, plat))
+                {
+                    float playerBottom = Position.Y;
+                    float platformTop = plat.Y;
+
+                    if (playerBottom <= platformTop + 10)
+                    {
+                        Position.Y = platformTop;
+                        velocityY = 0f;
+                        isJumping = false;
+                        onPlatform = true;
+
+                        if (!moving)
+                            state = "IDLE";
+                    }
+                }
+            }
+
+            if (!onPlatform && velocityY > 0)
+            {
+                state = "JUMP";
+            }
+
+            // Si cambió de estado, reiniciamos la animación
+            if (state != prevState)
+            {
+                currentFrame = 0;
+                animationTimer = 0f;
+            }
+
+            // Animación
+            animationTimer += delta;
+            if (animationTimer >= frameTime)
+            {
+                animationTimer = 0f;
+
+                int totalFrames = GetCurrentFrames().Length;
+
+                if (state == "JUMP")
+                {
+                    // 1. Si aún no llegamos al loop, avanzar normalmente
+                    if (currentFrame < jumpFrames.Length - 3)
+                    {
+                        currentFrame++;
+                    }
+                    else
+                    {
+                        // 2. Ciclar entre los últimos 3 frames
+                        currentFrame++;
+                        if (currentFrame >= jumpFrames.Length)
+                        {
+                            currentFrame = jumpFrames.Length - 3;
+                        }
+                    }
+                }
+                else
+                {
+                    // IDLE y RUN se ciclan normalmente
+                    currentFrame = (currentFrame + 1) % totalFrames;
+                }
+            }
         }
 
         public void Draw()
         {
-            Raylib.DrawRectangle((int)Position.X, (int)Position.Y, 40, 40, Color);
+            Texture2D[] frames = GetCurrentFrames();
+            Texture2D frame = frames[currentFrame];
+
+            float scale = 4.0f;
+
+            Vector2 drawPos = new Vector2(
+                Position.X - (frame.Width * scale) / 2,
+                Position.Y - (frame.Height * scale)
+            );
+
+            if (facingLeft)
+            {
+                Rectangle source = new Rectangle(0, 0, -frame.Width, frame.Height); // ❗voltear en eje X
+                Rectangle dest = new Rectangle(drawPos.X, drawPos.Y, frame.Width * scale, frame.Height * scale);
+                Raylib.DrawTexturePro(frame, source, dest, Vector2.Zero, 0f, Color.White);
+            }
+            else
+            {
+                Raylib.DrawTextureEx(frame, drawPos, 0f, scale, Color.White);
+            }
         }
+
+        private Texture2D[] GetCurrentFrames()
+        {
+            return state switch
+            {
+                "RUN" => runFrames,
+                "JUMP" => jumpFrames,
+                _ => idleFrames,
+            };
+        }
+
     }
 }

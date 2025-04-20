@@ -1,113 +1,59 @@
 ﻿using Raylib_cs;
 using System.Numerics;
-using UI;              // Asegúrate de tener esta línea
-using Entities;
+using SuperSmashTrees.Entities;
+using SuperSmashTrees.UI;
+using SuperSmashTrees.Core;
 
 class Program
 {
     static void Main()
     {
+        // Inicializá la ventana con un tamaño mínimo primero
+        Raylib.InitWindow(800, 600, "Super Smash Trees 🌲");
+
+        // Ahora que Raylib está listo, obtené el tamaño real del monitor
         int screenWidth = Raylib.GetMonitorWidth(0);
         int screenHeight = Raylib.GetMonitorHeight(0);
 
-        Raylib.InitWindow(screenWidth, screenHeight, "Super Smash Trees 🌲");
+        // Aplicá pantalla completa después
+        Raylib.SetWindowSize(screenWidth, screenHeight);
         Raylib.ToggleFullscreen();
 
         Raylib.SetTargetFPS(60);
 
-        Texture2D fondoJuego = Raylib.LoadTexture("Assets/Sprites/Backgrounds/GameBackground.png");
-
-        // Cargar texturas de plataformas
-        Platform.LoadTextures();
-
-        // Crear plataformas aleatorias
-        Random rng = new Random();
-        List<Platform> plataformas = new List<Platform>();
-
-        int intentos = 0;
-
-        while (plataformas.Count < 7 && intentos < 100)
-        {
-            float width = rng.Next(120, 180);
-            float height = 32;
-            float x = rng.Next(0, Raylib.GetScreenWidth() - (int)width);
-            float y = rng.Next(100, Raylib.GetScreenHeight() - 150); // evitar que queden muy abajo
-
-            Rectangle nueva = new Rectangle(x, y, width, height);
-
-            // Verificar que no se superponga con ninguna plataforma existente
-            bool separada = true;
-            foreach (var p in plataformas)
-            {
-                Rectangle expandida = new Rectangle(p.Rect.X - 20, p.Rect.Y - 20, p.Rect.Width + 40, p.Rect.Height + 40);
-
-                if (Raylib.CheckCollisionRecs(expandida, nueva))
-                {
-                    separada = false;
-                    break;
-                }
-            }
-
-            if (separada)
-            {
-                plataformas.Add(new Platform(x, y, width, height));
-            }
-
-            intentos++;
-        }
-
-
-        Menu menu = new Menu();
-        Player jugador1 = new Player(new Vector2(200, 300), Color.Red, KeyboardKey.W, KeyboardKey.S, KeyboardKey.A, KeyboardKey.D);
-        Player jugador2 = new Player(new Vector2(500, 300), Color.Blue, KeyboardKey.Up, KeyboardKey.Down, KeyboardKey.Left, KeyboardKey.Right);
-
-        bool jugar = false;
+        Menu menu = new Menu(screenWidth, screenHeight);
+        CharacterSelect? characterSelect = null;
+        GameManager? game = null;
 
         while (!Raylib.WindowShouldClose())
         {
-            Raylib.BeginDrawing();
-
-            Rectangle source = new Rectangle(0, 0, fondoJuego.Width, fondoJuego.Height);
-            Rectangle dest = new Rectangle(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-
-            Vector2 origin = new Vector2(0, 0);
-
-            Raylib.DrawTexturePro(fondoJuego, source, dest, origin, 0, Color.White);
-
-
-            // Dibujar plataformas
-            foreach (var plataforma in plataformas)
+            if (!menu.StartGame)
             {
-                plataforma.Draw();
+                menu.Update();
+                Raylib.BeginDrawing();
+                menu.Draw();
+                Raylib.EndDrawing();
             }
-
-
-
-        if (!jugar)
+            else if (characterSelect == null)
             {
-                // Mostrar el menú y esperar a que devuelva true
-                jugar = menu.Mostrar();
+                characterSelect = new CharacterSelect(screenWidth, screenHeight);
             }
-            else
+            else if (!characterSelect.SelectionDone)
             {
-                Raylib.ClearBackground(Color.DarkGreen);
-
-                jugador1.Update();
-                jugador2.Update();
-
-                jugador1.Draw();
-                jugador2.Draw();
-
+                characterSelect.Update();
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.DarkGray);
+                characterSelect.Draw();
+                Raylib.EndDrawing();
             }
-
-            Raylib.EndDrawing();
+            else if (game == null)
+            {
+                // Aquí pasamos ambos personajes seleccionados
+                game = new GameManager(screenWidth, screenHeight,
+                       characterSelect.Player1Character,
+                       characterSelect.Player2Character);
+                game.Run();
+            }
         }
-
-        // Liberar texturas al salir del juego
-        Platform.UnloadTextures();
-
-
-        Raylib.UnloadTexture(fondoJuego);
-        Raylib.CloseWindow();
     }
 }

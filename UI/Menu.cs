@@ -1,94 +1,83 @@
-﻿using System;
+﻿using Raylib_cs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Raylib_cs;
-using System.Numerics;
 
-
-
-
-namespace UI
+namespace SuperSmashTrees.UI
 {
     public class Menu
     {
-        private readonly string[] opciones = { "START", "EXIT" };
-        private int seleccion = 0;
+        private Texture2D background;
+        private int screenWidth;
+        private int screenHeight;
 
-        private Texture2D fondo;
+        private Rectangle playButton;
+        private Rectangle exitButton;
 
-        public Menu()
+        public bool StartGame { get; private set; } = false;
+
+        public Menu(int screenWidth, int screenHeight)
         {
-            fondo = Raylib.LoadTexture("Assets/Sprites/Backgrounds/MenuBackground.png");
+            this.screenWidth = screenWidth;
+            this.screenHeight = screenHeight;
+            background = Raylib.LoadTexture("Assets/Sprites/Backgrounds/MenuBackground.png");
+
+            float buttonWidth = 200;
+            float buttonHeight = 60;
+            float centerX = screenWidth / 2 - buttonWidth / 2;
+            playButton = new Rectangle(centerX, screenHeight * 0.7f, buttonWidth, buttonHeight);
+            exitButton = new Rectangle(centerX, screenHeight * 0.7f + 80, buttonWidth, buttonHeight);
         }
 
-        public bool Mostrar()
+        public void Update()
         {
-            Rectangle source = new Rectangle(0, 0, fondo.Width, fondo.Height);
-            Rectangle dest = new Rectangle(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-            Vector2 origin = new Vector2(0, 0);
+            Vector2 mousePos = Raylib.GetMousePosition();
 
-            Raylib.DrawTexturePro(fondo, source, dest, origin, 0, Color.White);
-
-
-
-            for (int i = 0; i < opciones.Length; i++)
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
             {
-                int width = 180;
-                int height = 50;
-                int y = 530;
-                int x = (i == 0) ? 175 : 440;
-
-                Rectangle boton = new Rectangle(x, y, width, height);
-                bool mouseSobre = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), boton);
-
-                // Cambiar selección si el mouse está encima
-                if (mouseSobre)
-                    seleccion = i;
-
-                // Dibujar botón
-                Color bgColor = mouseSobre ? Color.DarkGreen : (i == seleccion ? Color.DarkGreen : Color.Beige);
-                Raylib.DrawRectangleRec(boton, bgColor);
-                Raylib.DrawRectangleLinesEx(boton, 2, Color.Black);
-
-                // Texto centrado
-                int textWidth = Raylib.MeasureText(opciones[i], 24);
-                int textX = x + (width - textWidth) / 2;
-                int textY = y + (height - 24) / 2;
-
-                Color textColor = (i == seleccion) ? Color.White : Color.Black;
-                Raylib.DrawText(opciones[i], textX, textY, 24, textColor);
-
-                // Clic con mouse
-                if (mouseSobre && Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (Raylib.CheckCollisionPointRec(mousePos, playButton))
                 {
-                    if (opciones[seleccion] == "Salir") Raylib.CloseWindow();
-                    return true;
+                    StartGame = true;
+                }
+                else if (Raylib.CheckCollisionPointRec(mousePos, exitButton))
+                {
+                    Raylib.CloseWindow();
                 }
             }
-
-
-
-
-            // Navegación con teclas
-            if (Raylib.IsKeyPressed(KeyboardKey.Down)) seleccion++;
-            if (Raylib.IsKeyPressed(KeyboardKey.Up)) seleccion--;
-
-            if (seleccion < 0) seleccion = opciones.Length - 1;
-            if (seleccion >= opciones.Length) seleccion = 0;
-
-            // Enter = seleccionar
-            if (Raylib.IsKeyPressed(KeyboardKey.Enter))
-            {
-                if (opciones[seleccion] == "Salir") Raylib.CloseWindow();
-                return true; // empieza el juego
-            }
-
-            return false;
         }
-        
+
+        public void Draw()
+        {
+            // Escala proporcional para cubrir toda la pantalla (estilo "background cover")
+            float scaleX = screenWidth / (float)background.Width;
+            float scaleY = screenHeight / (float)background.Height;
+            float scale = MathF.Max(scaleX, scaleY);
+
+            float drawWidth = background.Width * scale;
+            float drawHeight = background.Height * scale;
+
+            Vector2 position = new Vector2(
+                (screenWidth - drawWidth) / 2,
+                (screenHeight - drawHeight) / 2
+            );
+
+            Rectangle sourceRec = new Rectangle(0, 0, background.Width, background.Height);
+            Rectangle destRec = new Rectangle(position.X, position.Y, drawWidth, drawHeight);
+
+            Raylib.DrawTexturePro(background, sourceRec, destRec, Vector2.Zero, 0f, Color.White);
+
+            DrawButton(playButton, "JUGAR");
+            DrawButton(exitButton, "SALIR");
+        }
+
+        private void DrawButton(Rectangle rect, string text)
+        {
+            Color bgColor = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), rect) ? Color.DarkGreen : Color.DarkGray;
+            Raylib.DrawRectangleRec(rect, bgColor);
+            Raylib.DrawText(text, (int)(rect.X + 40), (int)(rect.Y + 15), 30, Color.RayWhite);
+        }
     }
 }
-
-

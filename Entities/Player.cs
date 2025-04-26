@@ -54,7 +54,9 @@ namespace SuperSmashTrees.Entities
         }
 
         public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
-                   KeyboardKey rightKey, KeyboardKey leftKey, KeyboardKey jumpKey)
+                   KeyboardKey rightKey, KeyboardKey leftKey, KeyboardKey jumpKey,
+                   Player? otherPlayer = null)
+
         {
             bool moving = false;
             string prevState = state;
@@ -62,17 +64,37 @@ namespace SuperSmashTrees.Entities
             if (Raylib.IsKeyDown(rightKey))
             {
                 Position.X += Speed * delta;
-                state = "RUN";
-                facingLeft = false;
-                moving = true;
+                if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+                {
+                    Position.X -= 5f; // Empuje pequeño hacia la izquierda
+                    otherPlayer.Position.X += 5f; // Y al otro lo empujo un poquito a la derecha
+                }
+                else
+                {
+                    state = "RUN";
+                    facingLeft = false;
+                    moving = true;
+                }
             }
+
+
             else if (Raylib.IsKeyDown(leftKey))
             {
                 Position.X -= Speed * delta;
-                state = "RUN";
-                facingLeft = true;
-                moving = true;
+                if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+                {
+                    Position.X += 5f; // Empuje pequeño hacia la derecha
+                    otherPlayer.Position.X -= 5f; // Y al otro lo empujo un poquito a la izquierda
+                }
+                else
+                {
+                    state = "RUN";
+                    facingLeft = true;
+                    moving = true;
+                }
             }
+
+
 
             if (Raylib.IsKeyPressed(jumpKey) && !isJumping)
             {
@@ -190,6 +212,12 @@ namespace SuperSmashTrees.Entities
                 _ => idleFrames,
             };
         }
+
+        public Rectangle GetBounds()
+        {
+            return new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
+        }
+
 
     }
 }

@@ -99,8 +99,9 @@ namespace SuperSmashTrees.Core
                 }
                 float delta = Raylib.GetFrameTime();
 
-                player1.Update(delta, platforms, KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Space);
-                player2.Update(delta, platforms, KeyboardKey.D, KeyboardKey.A, KeyboardKey.W);
+                player1.Update(delta, platforms, KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Space, player2);
+                player2.Update(delta, platforms, KeyboardKey.D, KeyboardKey.A, KeyboardKey.W, player1);
+
 
                 player1.Draw();
                 player2.Draw();

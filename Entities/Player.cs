@@ -31,6 +31,11 @@ namespace SuperSmashTrees.Entities
         private string state = "IDLE"; // o "RUN"
         private bool facingLeft = false;
 
+        public SuperSmashTrees.Structures.List<int> CapturedTokens { get; private set; } = new SuperSmashTrees.Structures.List<int>();
+        public SuperSmashTrees.Structures.BST TreeBST { get; private set; } = new SuperSmashTrees.Structures.BST();
+        public SuperSmashTrees.Structures.AVLTree TreeAVL { get; private set; } = new SuperSmashTrees.Structures.AVLTree();
+
+
         public Player(string idlePath, string runPath, string jumpPath, int idleCount, int runCount, int jumpCount, Vector2 startPosition)
         {
             idleFrames = LoadFrames(idlePath, idleCount, "IDLE");
@@ -55,8 +60,7 @@ namespace SuperSmashTrees.Entities
 
         public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
                    KeyboardKey rightKey, KeyboardKey leftKey, KeyboardKey jumpKey,
-                   Player? otherPlayer = null)
-
+                   Player? otherPlayer = null, float maxGameArea = 1920f)
         {
             bool moving = false;
             string prevState = state;
@@ -177,6 +181,13 @@ namespace SuperSmashTrees.Entities
                     currentFrame = (currentFrame + 1) % totalFrames;
                 }
             }
+            // Limitar movimiento: no pasarse del área de juego
+            if (Position.X < 0)
+                Position.X = 0;
+
+            if (Position.X > maxGameArea)
+                Position.X = maxGameArea;
+
         }
 
         public void Draw()
@@ -217,6 +228,17 @@ namespace SuperSmashTrees.Entities
         {
             return new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
         }
+
+
+
+        public void CaptureToken(int tokenValue)
+        {
+            CapturedTokens.Add(tokenValue);
+            TreeBST.Insert(tokenValue); // Insertar en BST normal
+            TreeAVL.Insert(tokenValue); // Insertar en AVL balanceado
+        }
+
+
 
 
     }

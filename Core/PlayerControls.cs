@@ -1,23 +1,33 @@
 ﻿using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SuperSmashTrees.Core
+namespace SuperSmashTrees.Entities
 {
     public class PlayerControls
     {
-        public KeyboardKey Left;
-        public KeyboardKey Right;
-        public KeyboardKey Jump;
+        private KeyboardKey moveRightKey;
+        private KeyboardKey moveLeftKey;
+        private KeyboardKey jumpKey;
 
-        public PlayerControls(KeyboardKey left, KeyboardKey right, KeyboardKey jump)
+        public PlayerControls(KeyboardKey right, KeyboardKey left, KeyboardKey jump)
         {
-            Left = left;
-            Right = right;
-            Jump = jump;
+            moveRightKey = right;
+            moveLeftKey = left;
+            jumpKey = jump;
+        }
+
+        public bool MoveRight()
+        {
+            return Raylib.IsKeyDown(moveRightKey);
+        }
+
+        public bool MoveLeft()
+        {
+            return Raylib.IsKeyDown(moveLeftKey);
+        }
+
+        public bool JumpPressed()
+        {
+            return Raylib.IsKeyPressed(jumpKey);
         }
     }
 }

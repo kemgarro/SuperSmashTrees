@@ -1,11 +1,7 @@
 ﻿using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using SuperSmashTrees.Core;
+using SuperSmashTrees.Structures;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SuperSmashTrees.Entities
 {
@@ -28,21 +24,23 @@ namespace SuperSmashTrees.Entities
         public Vector2 Position;
         public float Speed = 300f;
 
-        private string state = "IDLE"; // o "RUN"
+        public string state = "IDLE";
         private bool facingLeft = false;
 
+        private PlayerControls controls;
+
         public SuperSmashTrees.Structures.List<int> CapturedTokens { get; private set; } = new SuperSmashTrees.Structures.List<int>();
-        public SuperSmashTrees.Structures.BST TreeBST { get; private set; } = new SuperSmashTrees.Structures.BST();
-        public SuperSmashTrees.Structures.AVLTree TreeAVL { get; private set; } = new SuperSmashTrees.Structures.AVLTree();
+        public BST TreeBST { get; set; } = new BST();
+        public AVLTree TreeAVL { get; set; } = new AVLTree();
+        public ChallengeManager ChallengeManager { get; private set; } = new ChallengeManager();
 
-
-        public Player(string idlePath, string runPath, string jumpPath, int idleCount, int runCount, int jumpCount, Vector2 startPosition)
+        public Player(string idlePath, string runPath, string jumpPath, int idleCount, int runCount, int jumpCount, Vector2 startPosition, PlayerControls controls)
         {
             idleFrames = LoadFrames(idlePath, idleCount, "IDLE");
             runFrames = LoadFrames(runPath, runCount, "RUN");
             jumpFrames = LoadFrames(jumpPath, jumpCount, "JUMP");
-            int jumpLoopStart = jumpFrames.Length - 3; // últimos 3
             Position = startPosition;
+            this.controls = controls;
         }
 
         private Texture2D[] LoadFrames(string path, int count, string prefix)
@@ -58,20 +56,18 @@ namespace SuperSmashTrees.Entities
             return frames;
         }
 
-        public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
-                   KeyboardKey rightKey, KeyboardKey leftKey, KeyboardKey jumpKey,
-                   Player? otherPlayer = null, float maxGameArea = 1920f)
+        public void Update(float delta, SuperSmashTrees.Structures.List<SuperSmashTrees.Entities.Platform> platforms, Player? otherPlayer = null, float maxGameArea = 1920f)
         {
             bool moving = false;
             string prevState = state;
 
-            if (Raylib.IsKeyDown(rightKey))
+            if (controls.MoveRight())
             {
                 Position.X += Speed * delta;
                 if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
                 {
-                    Position.X -= 5f; // Empuje pequeño hacia la izquierda
-                    otherPlayer.Position.X += 5f; // Y al otro lo empujo un poquito a la derecha
+                    Position.X -= 5f;
+                    otherPlayer.Position.X += 5f;
                 }
                 else
                 {
@@ -80,15 +76,13 @@ namespace SuperSmashTrees.Entities
                     moving = true;
                 }
             }
-
-
-            else if (Raylib.IsKeyDown(leftKey))
+            else if (controls.MoveLeft())
             {
                 Position.X -= Speed * delta;
                 if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
                 {
-                    Position.X += 5f; // Empuje pequeño hacia la derecha
-                    otherPlayer.Position.X -= 5f; // Y al otro lo empujo un poquito a la izquierda
+                    Position.X += 5f;
+                    otherPlayer.Position.X -= 5f;
                 }
                 else
                 {
@@ -98,20 +92,18 @@ namespace SuperSmashTrees.Entities
                 }
             }
 
-
-
-            if (Raylib.IsKeyPressed(jumpKey) && !isJumping)
+            if (controls.JumpPressed() && !isJumping)
             {
                 velocityY = jumpForce;
                 isJumping = true;
                 state = "JUMP";
             }
 
-            // Aplicar gravedad
+            // Gravedad
             velocityY += gravity * delta;
             Position.Y += velocityY * delta;
 
-            // Revisar colisiones con plataformas (solo por arriba)
+            // Colisiones
             Rectangle playerRect = new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
             bool onPlatform = false;
 
@@ -143,14 +135,13 @@ namespace SuperSmashTrees.Entities
                 state = "JUMP";
             }
 
-            // Si cambió de estado, reiniciamos la animación
+            // Animaciones
             if (state != prevState)
             {
                 currentFrame = 0;
                 animationTimer = 0f;
             }
 
-            // Animación
             animationTimer += delta;
             if (animationTimer >= frameTime)
             {
@@ -160,14 +151,12 @@ namespace SuperSmashTrees.Entities
 
                 if (state == "JUMP")
                 {
-                    // 1. Si aún no llegamos al loop, avanzar normalmente
                     if (currentFrame < jumpFrames.Length - 3)
                     {
                         currentFrame++;
                     }
                     else
                     {
-                        // 2. Ciclar entre los últimos 3 frames
                         currentFrame++;
                         if (currentFrame >= jumpFrames.Length)
                         {
@@ -177,17 +166,15 @@ namespace SuperSmashTrees.Entities
                 }
                 else
                 {
-                    // IDLE y RUN se ciclan normalmente
                     currentFrame = (currentFrame + 1) % totalFrames;
                 }
             }
-            // Limitar movimiento: no pasarse del área de juego
+
+            // No salir del área
             if (Position.X < 0)
                 Position.X = 0;
-
             if (Position.X > maxGameArea)
                 Position.X = maxGameArea;
-
         }
 
         public void Draw()
@@ -204,7 +191,7 @@ namespace SuperSmashTrees.Entities
 
             if (facingLeft)
             {
-                Rectangle source = new Rectangle(0, 0, -frame.Width, frame.Height); // ❗voltear en eje X
+                Rectangle source = new Rectangle(0, 0, -frame.Width, frame.Height);
                 Rectangle dest = new Rectangle(drawPos.X, drawPos.Y, frame.Width * scale, frame.Height * scale);
                 Raylib.DrawTexturePro(frame, source, dest, Vector2.Zero, 0f, Color.White);
             }
@@ -229,17 +216,11 @@ namespace SuperSmashTrees.Entities
             return new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
         }
 
-
-
         public void CaptureToken(int tokenValue)
         {
             CapturedTokens.Add(tokenValue);
-            TreeBST.Insert(tokenValue); // Insertar en BST normal
-            TreeAVL.Insert(tokenValue); // Insertar en AVL balanceado
+            TreeBST.Insert(tokenValue);
+            TreeAVL.Insert(tokenValue);
         }
-
-
-
-
     }
 }

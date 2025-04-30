@@ -150,22 +150,24 @@ namespace SuperSmashTrees.Core
         private void CheckChallengeCompletion(Player player)
         {
             var challenge = player.ChallengeManager.GetActiveChallenge();
-            if (challenge == null)
-                return;
+            if (challenge == null) return;
 
             bool completed = player.ChallengeManager.ValidateChallenge(challenge, player);
+            if (!completed) return;
 
-            if (completed)
-            {
-                // ✅ Resetear árbol
-                if (challenge.TargetTree == Challenge.TreeType.BST)
-                    player.TreeBST = new BST();
-                else if (challenge.TargetTree == Challenge.TreeType.AVL)
-                    player.TreeAVL = new AVLTree();
+            // ✅ Resetear árbol
+            if (challenge.TargetTree == Challenge.TreeType.BST)
+                player.TreeBST = new BST();
+            else if (challenge.TargetTree == Challenge.TreeType.AVL)
+                player.TreeAVL = new AVLTree();
 
-                // ✅ Avanzar a siguiente reto
-                player.ChallengeManager.AdvanceChallenge();
-            }
+            // ✅ Resetear lista de tokens (antes de capturar otro)
+            player.CapturedTokens.Clear(); // Usa tu método personalizado
+
+            // ✅ Avanzar a siguiente reto
+            player.ChallengeManager.AdvanceChallenge();
         }
+
+
     }
 }

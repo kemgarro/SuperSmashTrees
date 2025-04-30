@@ -38,20 +38,28 @@ namespace SuperSmashTrees.Core
                 token.Update(delta);
                 token.Draw();
 
+                // Jugador 1
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player1.GetBounds()))
                 {
-                    player1.CaptureToken(token.Value);
+                    if (player1.ChallengeManager.GetActiveChallenge() != null)
+                        player1.CaptureToken(token.Value);
+
                     tokens = EliminarToken(tokens, i);
                     i--;
                     continue;
                 }
+
+                // Jugador 2
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player2.GetBounds()))
                 {
-                    player2.CaptureToken(token.Value);
+                    if (player2.ChallengeManager.GetActiveChallenge() != null)
+                        player2.CaptureToken(token.Value);
+
                     tokens = EliminarToken(tokens, i);
                     i--;
                 }
             }
+
         }
 
         private SuperSmashTrees.Structures.List<Token> EliminarToken(SuperSmashTrees.Structures.List<Token> lista, int index)

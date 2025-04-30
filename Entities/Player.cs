@@ -41,6 +41,9 @@ namespace SuperSmashTrees.Entities
             jumpFrames = LoadFrames(jumpPath, jumpCount, "JUMP");
             Position = startPosition;
             this.controls = controls;
+
+            ChallengeManager.AdvanceChallenge();
+
         }
 
         private Texture2D[] LoadFrames(string path, int count, string prefix)
@@ -219,8 +222,15 @@ namespace SuperSmashTrees.Entities
         public void CaptureToken(int tokenValue)
         {
             CapturedTokens.Add(tokenValue);
-            TreeBST.Insert(tokenValue);
-            TreeAVL.Insert(tokenValue);
+
+            var challenge = ChallengeManager.GetActiveChallenge();
+            if (challenge == null) return;
+
+            if (challenge.TargetTree == Challenge.TreeType.BST)
+                TreeBST.Insert(tokenValue);
+            else if (challenge.TargetTree == Challenge.TreeType.AVL)
+                TreeAVL.Insert(tokenValue);
         }
+
     }
 }

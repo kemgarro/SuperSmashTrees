@@ -29,6 +29,9 @@ namespace SuperSmashTrees.Entities
 
         private PlayerControls controls;
 
+        public int CompletedChallenges { get; private set; } = 0;
+       
+
         public SuperSmashTrees.Structures.List<int> CapturedTokens { get; private set; } = new SuperSmashTrees.Structures.List<int>();
         public BST TreeBST { get; set; } = new BST();
         public AVLTree TreeAVL { get; set; } = new AVLTree();
@@ -199,6 +202,7 @@ namespace SuperSmashTrees.Entities
                 Raylib.DrawTexturePro(frame, source, dest, Vector2.Zero, 0f, Color.White);
             }
             else
+            
             {
                 Raylib.DrawTextureEx(frame, drawPos, 0f, scale, Color.White);
             }
@@ -230,6 +234,11 @@ namespace SuperSmashTrees.Entities
                 TreeBST.Insert(tokenValue);
             else if (challenge.TargetTree == Challenge.TreeType.AVL)
                 TreeAVL.Insert(tokenValue);
+        }
+
+        public void IncrementChallenges()
+        {
+            CompletedChallenges++;
         }
 
     }

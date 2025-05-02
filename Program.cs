@@ -1,59 +1,85 @@
 ﻿using Raylib_cs;
-using System.Numerics;
-using SuperSmashTrees.Entities;
-using SuperSmashTrees.UI;
 using SuperSmashTrees.Core;
+using SuperSmashTrees.UI;
+using static System.Formats.Asn1.AsnWriter;
 
 class Program
 {
+    enum Scene
+    {
+        Menu,
+        CharacterSelect,
+        Game,
+        Exit
+    }
+
     static void Main()
     {
-        // Inicializá la ventana con un tamaño mínimo primero
-        Raylib.InitWindow(800, 600, "Super Smash Trees 🌲");
-
-        // Ahora que Raylib está listo, obtené el tamaño real del monitor
-        int screenWidth = Raylib.GetMonitorWidth(0);
-        int screenHeight = Raylib.GetMonitorHeight(0);
-
-        // Aplicá pantalla completa después
-        Raylib.SetWindowSize(screenWidth, screenHeight);
+        Raylib.InitWindow(1920, 1080, "Super Smash Trees");
         Raylib.ToggleFullscreen();
-
         Raylib.SetTargetFPS(60);
 
-        Menu menu = new Menu(screenWidth, screenHeight);
-        CharacterSelect? characterSelect = null;
-        GameManager? game = null;
+        Scene currentScene = Scene.Menu;
 
-        while (!Raylib.WindowShouldClose())
+        CharacterOption? selected1 = null;
+        CharacterOption? selected2 = null;
+
+        while (!Raylib.WindowShouldClose() && currentScene != Scene.Exit)
         {
-            if (!menu.StartGame)
+            switch (currentScene)
             {
-                menu.Update();
-                Raylib.BeginDrawing();
-                menu.Draw();
-                Raylib.EndDrawing();
-            }
-            else if (characterSelect == null)
-            {
-                characterSelect = new CharacterSelect(screenWidth, screenHeight);
-            }
-            else if (!characterSelect.SelectionDone)
-            {
-                characterSelect.Update();
-                Raylib.BeginDrawing();
-                Raylib.ClearBackground(Color.DarkGray);
-                characterSelect.Draw();
-                Raylib.EndDrawing();
-            }
-            else if (game == null)
-            {
-                // Aquí pasamos ambos personajes seleccionados
-                game = new GameManager(screenWidth, screenHeight,
-                       characterSelect.Player1Character,
-                       characterSelect.Player2Character);
-                game.Run();
+                case Scene.Menu:
+                    Menu menu = new Menu(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+                    while (!menu.StartGame && !Raylib.WindowShouldClose())
+                    {
+                        Raylib.BeginDrawing();
+                        Raylib.ClearBackground(Color.Black);
+                        menu.Update();
+                        menu.Draw();
+                        Raylib.EndDrawing();
+                    }
+
+                    if (menu.StartGame)
+                        currentScene = Scene.CharacterSelect;
+                    break;
+
+                case Scene.CharacterSelect:
+                    CharacterSelect selector = new CharacterSelect(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+
+                    while (!selector.SelectionDone && !Raylib.WindowShouldClose())
+                    {
+                        Raylib.BeginDrawing();
+                        Raylib.ClearBackground(Color.Black);
+                        selector.Update();
+                        selector.Draw();
+                        Raylib.EndDrawing();
+                    }
+
+                    if (selector.SelectionDone)
+                    {
+                        selected1 = selector.Player1Character;
+                        selected2 = selector.Player2Character;
+                        currentScene = Scene.Game;
+                    }
+                    break;
+
+                case Scene.Game:
+                    if (selected1 != null && selected2 != null)
+                    {
+                        GameManager game = new GameManager(Raylib.GetScreenWidth(), Raylib.GetScreenHeight(), selected1, selected2);
+                        game.Run();
+
+                        // Cuando GameManager.Run() termina, volvemos al menú
+                        currentScene = Scene.Menu;
+                    }
+                    else
+                    {
+                        currentScene = Scene.Menu;
+                    }
+                    break;
             }
         }
+
+        Raylib.CloseWindow();
     }
 }

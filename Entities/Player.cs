@@ -38,6 +38,7 @@ namespace SuperSmashTrees.Entities
         public AVLTree TreeAVL { get; set; } = new AVLTree();
         public ChallengeManager ChallengeManager { get; } = new ChallengeManager();
 
+        // ░░░ Carga de sprites ░░░
         public Player(string idlePath, string runPath, string jumpPath, string attackPath,
                       int idleCount, int runCount, int jumpCount, int attackCount,
                       Vector2 startPosition, PlayerControls controls)
@@ -53,7 +54,6 @@ namespace SuperSmashTrees.Entities
             ChallengeManager.AdvanceChallenge();
         }
 
-        // ░░░ Carga de sprites ░░░
         private Texture2D[] LoadFrames(string path, int count, string prefix)
         {
             var frames = new Texture2D[count];
@@ -203,6 +203,45 @@ namespace SuperSmashTrees.Entities
             // Límites del escenario
             if (Position.X < 0) Position.X = 0;
             if (Position.X > maxGameArea) Position.X = maxGameArea;
+
+            // ░░░ Colisión con la espada (área de ataque) ░░░
+            if (isAttacking && otherPlayer != null)
+            {
+                // Solo empuja después de que la animación haya terminado
+                if (currentFrame == attackFrames.Length - 1)
+                {
+                    // Define el área de colisión de la espada a ambos lados, y la hace más grande
+                    Rectangle swordCollisionArea = GetSwordCollisionArea();
+
+                    // Si hay colisión con el otro jugador, empujamos al otro jugador
+                    if (Raylib.CheckCollisionRecs(swordCollisionArea, otherPlayer.GetBounds()))
+                    {
+                        float pushForce = 150f; // Controla la fuerza del empuje
+                        if (facingLeft)
+                        {
+                            otherPlayer.Position.X -= pushForce;  // Empuja hacia la izquierda
+                        }
+                        else
+                        {
+                            otherPlayer.Position.X += pushForce;  // Empuja hacia la derecha
+                        }
+                    }
+                }
+            }
+        }
+
+        // ░░░ Generar área de colisión para la espada (más grande) ░░░
+        private Rectangle GetSwordCollisionArea()
+        {
+            // Aumentamos el tamaño del hitbox (más grande)
+            float width = 100f; // Aumentamos el ancho del área de la espada
+            float height = 40f; // Aumentamos la altura del área de la espada
+
+            // Si el jugador está mirando a la izquierda, la espada estará a la izquierda de él
+            float xOffset = facingLeft ? Position.X - width : Position.X + 22; // Ajusta la posición de la espada
+            float yOffset = Position.Y - 30; // Ajusta la posición de la espada en el eje Y
+
+            return new Rectangle(xOffset, yOffset, width, height);
         }
 
         // ░░░ Render ░░░

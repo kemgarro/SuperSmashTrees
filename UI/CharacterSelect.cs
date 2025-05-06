@@ -28,8 +28,9 @@ namespace SuperSmashTrees.UI
 
             availableCharacters = new CharacterOption[]
             {
-                new CharacterOption("Samurai", Raylib.LoadTexture("Assets/Sprites/Icons/Samurai/IDLE1.png"), 10, 16, 9),
-                new CharacterOption("Knight", Raylib.LoadTexture("Assets/Sprites/Icons/Knight/IDLE1.png"), 7, 8, 5)
+                //         name     icon                                       idle run jump attack
+                new CharacterOption("Samurai", Raylib.LoadTexture("Assets/Sprites/Icons/Samurai/IDLE1.png"), 10, 16,  9, 7),
+                new CharacterOption("Knight",  Raylib.LoadTexture("Assets/Sprites/Icons/Knight/IDLE1.png"),   7,  8,  5, 6)
             };
         }
         private bool player1Confirmed = false;

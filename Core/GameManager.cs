@@ -3,268 +3,247 @@ using SuperSmashTrees.Entities;
 using SuperSmashTrees.Structures;
 using SuperSmashTrees.UI;
 using SuperSmashTrees.Draw;
-using System;
+using SuperSmashTrees.Utils;
 using System.Numerics;
 
 namespace SuperSmashTrees.Core
 {
     public class GameManager
     {
-        // ░░░ Campos ░░░
         private Texture2D background;
         private PlatformManager platformManager;
         private TokenManager tokenManager;
 
-        private readonly int screenWidth;
-        private readonly int screenHeight;
+        private readonly int screenWidth, screenHeight;
         private readonly float sidebarWidth;
 
-        private Player player1;
-        private Player player2;
+        private Player player1, player2;
 
         private readonly Timer gameTimer;
-        private bool gameEnded = false;
-        private bool isPaused = false;
-        private bool shouldExit = false;
+        private bool gameEnded, isPaused, shouldExit;
 
-        private readonly CharacterOption player1Option;
-        private readonly CharacterOption player2Option;
+        private readonly CharacterOption player1Option, player2Option;
 
-        // UI – botones
-        private readonly Rectangle configButton;
-        private readonly Rectangle resumeButton;
-        private readonly Rectangle restartButton;
-        private readonly Rectangle exitButton;
+        private readonly Rectangle configButton, resumeButton, restartButton, exitButton;
 
-        // ░░░ Constructor ░░░
         public GameManager(int width, int height,
-                           CharacterOption player1Option, CharacterOption player2Option)
+                           CharacterOption p1Opt, CharacterOption p2Opt)
         {
             screenWidth = width;
             screenHeight = height;
-            sidebarWidth = screenWidth * 0.2f;
-            gameTimer = new Timer(120f); // 2 min
+            sidebarWidth = width * 0.2f;
+            gameTimer = new Timer(120f);
 
-            this.player1Option = player1Option;
-            this.player2Option = player2Option;
+            player1Option = p1Opt;
+            player2Option = p2Opt;
 
-            // Botonería
-            configButton = new Rectangle(screenWidth - 60, 20, 40, 40);
-            resumeButton = new Rectangle(screenWidth / 2 - 100, screenHeight / 2 - 60, 200, 40);
-            restartButton = new Rectangle(screenWidth / 2 - 100, screenHeight / 2, 200, 40);
-            exitButton = new Rectangle(screenWidth / 2 - 100, screenHeight / 2 + 60, 200, 40);
+            configButton = new Rectangle(width - 60, 20, 40, 40);
+            resumeButton = new Rectangle(width / 2 - 100, height / 2 - 60, 200, 40);
+            restartButton = new Rectangle(width / 2 - 100, height / 2, 200, 40);
+            exitButton = new Rectangle(width / 2 - 100, height / 2 + 60, 200, 40);
 
-            // Recursos
-            background = Raylib.LoadTexture("Assets/Sprites/Backgrounds/GameBackground.png");
+            background = TextureManager.Load("Assets/Sprites/Backgrounds/GameBackground.png");
 
-            platformManager = new PlatformManager(new Texture2D[]
-            {
-                Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass.png"),
-                Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass_small.png")
-            }, width, height);
-
-            tokenManager = new TokenManager();
-
-            InitialisePlayers();
+            ResetGame(); // Arranca siempre con todo limpio
         }
 
-        // ░░░ Bucle principal ░░░
         public void Run()
         {
             while (!Raylib.WindowShouldClose() && !shouldExit)
             {
-                Raylib.BeginDrawing();
-                Raylib.ClearBackground(Color.Black);
-
                 float delta = Raylib.GetFrameTime();
-                float gameAreaWidth = screenWidth * 0.8f;
-
                 Vector2 mouse = Raylib.GetMousePosition();
 
-                // Pausa desde engranaje
-                if (!isPaused && Raylib.IsMouseButtonPressed(MouseButton.Left) &&
-                    Raylib.CheckCollisionPointRec(mouse, configButton))
-                {
-                    isPaused = true;
-                }
+                // Si terminó el tiempo, marcamos gameEnded
+                if (gameTimer.TimeOver && !gameEnded)
+                    gameEnded = true;
 
-                // Pausa desde ESC
-                if (Raylib.IsKeyPressed(KeyboardKey.Escape) && !gameEnded)
-                    isPaused = !isPaused;
+                // Permitir reiniciar con R en pantalla de fin
+                if (gameEnded && Raylib.IsKeyPressed(KeyboardKey.R))
+                {
+                    ResetGame();
+                }
 
                 if (!gameEnded && !isPaused)
                 {
+                    // Abrir menú de pausa
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left) &&
+                        Raylib.CheckCollisionPointRec(mouse, configButton))
+                        isPaused = true;
+                    if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+                        isPaused = true;
+
+                    // Actualizar lógica
                     gameTimer.Update(delta);
-                    DrawBackground();
-                    platformManager.Draw();
-                    tokenManager.Update(delta, gameAreaWidth, player1, player2);
+                    tokenManager.Update(delta, screenWidth * 0.8f, player1, player2);
+
                     CheckChallengeCompletion(player1);
                     CheckChallengeCompletion(player2);
-                    UpdateAndDrawPlayers(delta, gameAreaWidth);
+
+                    player1.Update(delta, platformManager.GetPlatforms(), player2, screenWidth * 0.8f);
+                    player2.Update(delta, platformManager.GetPlatforms(), player1, screenWidth * 0.8f);
                 }
-                else if (isPaused)
+                else if (isPaused && Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
-                    DrawPauseMenu();
-                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    if (Raylib.CheckCollisionPointRec(mouse, resumeButton))
+                        isPaused = false;
+                    else if (Raylib.CheckCollisionPointRec(mouse, restartButton))
                     {
-                        if (Raylib.CheckCollisionPointRec(mouse, resumeButton))
-                            isPaused = false;
-                        else if (Raylib.CheckCollisionPointRec(mouse, restartButton))
-                        {
-                            isPaused = false;
-                            ResetGame();
-                        }
-                        else if (Raylib.CheckCollisionPointRec(mouse, exitButton))
-                        {
-                            shouldExit = true;
-                        }
+                        isPaused = false;
+                        ResetGame();
                     }
+                    else if (Raylib.CheckCollisionPointRec(mouse, exitButton))
+                        shouldExit = true;
                 }
 
-                DrawSidebar(gameAreaWidth);
+                // Dibujar todo
+                Raylib.BeginDrawing();
+                Raylib.ClearBackground(Color.Black);
 
-                if (gameTimer.TimeOver && !gameEnded) gameEnded = true;
+                DrawBackground();
+                platformManager.Draw();
+                tokenManager.Draw();
 
-                if (gameEnded)
+                if (!gameEnded && !isPaused)
                 {
-                    DrawGameOverScreen();
-                    if (Raylib.IsKeyPressed(KeyboardKey.R)) ResetGame();
+                    player1.Draw();
+                    player2.Draw();
                 }
+
+                DrawSidebar(screenWidth * 0.8f);
+
+                if (isPaused) DrawPauseMenu();
+                if (gameEnded) DrawGameOverScreen();
 
                 Raylib.EndDrawing();
             }
+
+            TextureManager.UnloadAll();
         }
 
-        // ░░░ Inicialización de jugadores ░░░
-        private void InitialisePlayers()
+        private void ResetGame()
+        {
+            gameEnded = false;
+            isPaused = false;
+            shouldExit = false;
+            gameTimer.Reset();
+
+            platformManager = new PlatformManager(new[]
+            {
+                TextureManager.Load("Assets/Sprites/Platforms/ground_grass.png"),
+                TextureManager.Load("Assets/Sprites/Platforms/ground_grass_small.png")
+            }, screenWidth, screenHeight);
+
+            tokenManager = new TokenManager();
+
+            player1 = ResetPlayer(player1Option, true);
+            player2 = ResetPlayer(player2Option, false);
+
+            // Limpia TODO el estado de los jugadores
+            player1.ClearProgress();
+            player2.ClearProgress();
+        }
+
+        private Player ResetPlayer(CharacterOption opt, bool first)
         {
             var ground = platformManager.GetPlatforms().Get(0);
-            float scale = 4f; int spriteW = 22; float margin = 50f; float y = ground.Rect.Y;
-            Vector2 start1 = new Vector2(ground.Rect.X + margin + (spriteW * scale) / 2, y);
-            Vector2 start2 = new Vector2(ground.Rect.X + ground.Rect.Width - margin - (spriteW * scale) / 2, y);
+            float scale = 4f;
+            int spriteW = 22;
+            float margin = 50f, y = ground.Rect.Y;
 
-            var c1 = new PlayerControls(KeyboardKey.D, KeyboardKey.A, KeyboardKey.W, KeyboardKey.F);
-            var c2 = new PlayerControls(KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Up, KeyboardKey.RightControl);
+            Vector2 start = first
+                ? new Vector2(ground.Rect.X + margin + (spriteW * scale) / 2, y)
+                : new Vector2(ground.Rect.X + ground.Rect.Width - margin - (spriteW * scale) / 2, y);
 
-            string p1 = $"Assets/Sprites/Characters/{player1Option.Name}";
-            string p2 = $"Assets/Sprites/Characters/{player2Option.Name}";
+            var controls = first
+                ? new PlayerControls(KeyboardKey.D, KeyboardKey.A, KeyboardKey.W, KeyboardKey.F)
+                : new PlayerControls(KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Up, KeyboardKey.RightControl);
 
-            player1 = new Player($"{p1}/IDLE", $"{p1}/RUN", $"{p1}/JUMP", $"{p1}/ATTACK1", // 📁 carpeta ATTACK1
-                                 player1Option.IdleFrames, player1Option.RunFrames,
-                                 player1Option.JumpFrames, player1Option.AttackFrames,
-                                 start1, c1);
-            
-
-            player2 = new Player($"{p2}/IDLE", $"{p2}/RUN", $"{p2}/JUMP", $"{p2}/ATTACK1", // 📁 carpeta ATTACK1
-                                 player2Option.IdleFrames, player2Option.RunFrames,
-                                 player2Option.JumpFrames, player2Option.AttackFrames,
-                                 start2, c2);
-
+            string basePath = $"Assets/Sprites/Characters/{opt.Name}";
+            return new Player(
+                $"{basePath}/IDLE", $"{basePath}/RUN",
+                $"{basePath}/JUMP", $"{basePath}/ATTACK1",
+                opt.IdleFrames, opt.RunFrames,
+                opt.JumpFrames, opt.AttackFrames,
+                start, controls
+            );
         }
-        // ░░░ Dibujo de fondo ░░░
+
+        private void CheckChallengeCompletion(Player p)
+        {
+            var ch = p.ChallengeManager.GetActiveChallenge();
+            if (ch == null) return;
+
+            // Solo validar tras capturar ≥1 token
+            if (p.CapturedTokens.Count == 0) return;
+
+            if (!p.ChallengeManager.ValidateChallenge(ch, p)) return;
+
+            // Cumplido: reinicia árbol y tokens
+            if (ch.TargetTree == Challenge.TreeType.BST) p.TreeBST = new BST();
+            else p.TreeAVL = new AVLTree();
+
+            p.CapturedTokens.Clear();
+            p.CompletedChallenges++;
+            p.ChallengeManager.AdvanceChallenge();
+            p.AddScore(10);
+        }
+
         private void DrawBackground()
         {
-            float scale = MathF.Max(screenWidth / (float)background.Width,
-                                      screenHeight / (float)background.Height);
-            float dW = background.Width * scale;
-            float dH = background.Height * scale;
-            Vector2 pos = new Vector2((screenWidth - dW) / 2, (screenHeight - dH) / 2);
+            float sx = screenWidth / (float)background.Width;
+            float sy = screenHeight / (float)background.Height;
+            float scale = MathF.Max(sx, sy);
+            float w = background.Width * scale, h = background.Height * scale;
+            Vector2 pos = new Vector2((screenWidth - w) / 2, (screenHeight - h) / 2);
 
-            Raylib.DrawTexturePro(background, new Rectangle(0, 0, background.Width, background.Height),
-                                   new Rectangle(pos.X, pos.Y, dW, dH), Vector2.Zero, 0f, Color.White);
+            Raylib.DrawTexturePro(
+                background,
+                new Rectangle(0, 0, background.Width, background.Height),
+                new Rectangle(pos.X, pos.Y, w, h),
+                Vector2.Zero, 0f, Color.White
+            );
         }
 
-        // ░░░ Actualizar y dibujar jugadores ░░░
-        private void UpdateAndDrawPlayers(float delta, float gameAreaWidth)
+        private void DrawSidebar(float x0)
         {
-            player1.Update(delta, platformManager.GetPlatforms(), player2, gameAreaWidth);
-            player2.Update(delta, platformManager.GetPlatforms(), player1, gameAreaWidth);
-
-            player1.Draw();
-            player2.Draw();
-        }
-
-        // ░░░ Panel lateral ░░░
-        private void DrawSidebar(float gameAreaWidth)
-        {
-            Rectangle sidebar = new Rectangle(gameAreaWidth, 0, sidebarWidth, screenHeight);
+            var sidebar = new Rectangle(x0, 0, sidebarWidth, screenHeight);
             Raylib.DrawRectangleRec(sidebar, new Color(30, 30, 30, 180));
-            Raylib.DrawLine((int)gameAreaWidth, 0, (int)gameAreaWidth, screenHeight, Color.White);
+            Raylib.DrawLine((int)x0, 0, (int)x0, screenHeight, Color.White);
 
-            Raylib.DrawText("Árboles y Retos", (int)(gameAreaWidth + 20), 20, 30, Color.Yellow);
-            Raylib.DrawText($"Tiempo: {gameTimer.GetFormattedTime()}", (int)(screenWidth * 0.8f + 20), screenHeight - 40, 24, Color.White);
+            Raylib.DrawText("Árboles y Retos", (int)(x0 + 20), 20, 30, Color.Yellow);
 
-            float centerX = screenWidth * 0.8f + sidebarWidth / 2;
-            DrawPlayerInfo(player1, "Jugador 1", centerX, 50, Color.Green);
-            DrawPlayerInfo(player2, "Jugador 2", centerX, 400, Color.Blue);
+            string t = $"Tiempo: {gameTimer.GetFormattedTime()}";
+            int tx = (int)(x0 + 20), ty = screenHeight - 40;
+            Raylib.DrawText(t, tx, ty, 24, Color.White);
+            Raylib.DrawText($"P1: {player1.Score}  P2: {player2.Score}",
+                            tx + Raylib.MeasureText(t, 24), ty, 24, Color.LightGray);
 
-            // engranaje
+            float cx = x0 + sidebarWidth / 2;
+            DrawPlayerInfo(player1, "Jugador 1", cx, 50, Color.Green);
+            DrawPlayerInfo(player2, "Jugador 2", cx, 400, Color.Blue);
+
             Raylib.DrawRectangleRec(configButton, Color.Gray);
             Raylib.DrawText("⚙", (int)configButton.X + 10, (int)configButton.Y + 5, 24, Color.White);
         }
 
-        private void DrawPlayerInfo(Player player, string label, float centerX, int yStart, Color color)
+        private void DrawPlayerInfo(Player p, string label, float cx, int y, Color col)
         {
-            Raylib.DrawText(label, (int)(centerX - 40), yStart, 20, color);
-            int treeY = yStart + 60;
-
-            var challenge = player.ChallengeManager.GetActiveChallenge();
-            if (challenge != null)
+            Raylib.DrawText(label, (int)(cx - 40), y, 20, col);
+            var ch = p.ChallengeManager.GetActiveChallenge();
+            if (ch != null)
             {
-                Raylib.DrawText($"Reto: {challenge.TargetTree} - {challenge.Goal} {challenge.TargetValue}", (int)(centerX - 60), yStart + 30, 16, Color.White);
-                if (challenge.TargetTree == Challenge.TreeType.BST && player.TreeBST.Root != null)
-                    TreeDrawer.DrawBST(player.TreeBST.Root, centerX, treeY, 60);
-                else if (challenge.TargetTree == Challenge.TreeType.AVL && player.TreeAVL.Root != null)
-                    TreeDrawer.DrawAVL(player.TreeAVL.Root, centerX, treeY, 60);
+                Raylib.DrawText(
+                    $"Reto: {ch.TargetTree} - {ch.Goal} {ch.TargetValue}",
+                    (int)(cx - 60), y + 30, 16, Color.White
+                );
+                if (ch.TargetTree == Challenge.TreeType.BST && p.TreeBST.Root != null)
+                    TreeDrawer.DrawBST(p.TreeBST.Root, cx, y + 60, 60);
+                else if (ch.TargetTree == Challenge.TreeType.AVL && p.TreeAVL.Root != null)
+                    TreeDrawer.DrawAVL(p.TreeAVL.Root, cx, y + 60, 60);
             }
         }
 
-        // ░░░ Verificar retos ░░░
-        private void CheckChallengeCompletion(Player player)
-        {
-            var challenge = player.ChallengeManager.GetActiveChallenge();
-            if (challenge == null) return;
-
-            if (!player.ChallengeManager.ValidateChallenge(challenge, player)) return;
-
-            // Reset árbol y tokens
-            if (challenge.TargetTree == Challenge.TreeType.BST) player.TreeBST = new BST();
-            else player.TreeAVL = new AVLTree();
-            player.CapturedTokens.Clear();
-            player.IncrementChallenges();
-            player.ChallengeManager.AdvanceChallenge();
-        }
-
-        // ░░░ Pantalla fin de juego ░░░
-        private void DrawGameOverScreen()
-        {
-            string msg = "¡Tiempo finalizado!";
-            Raylib.DrawText(msg, screenWidth / 2 - Raylib.MeasureText(msg, 40) / 2, screenHeight / 2 - 100, 40, Color.Yellow);
-
-            int p1 = player1.CompletedChallenges;
-            int p2 = player2.CompletedChallenges;
-            string result = p1 > p2 ? "Jugador 1 gana" : p2 > p1 ? "Jugador 2 gana" : "¡Empate!";
-            Raylib.DrawText(result, screenWidth / 2 - Raylib.MeasureText(result, 30) / 2, screenHeight / 2, 30, Color.White);
-            Raylib.DrawText("Presiona R para reiniciar", screenWidth / 2 - 150, screenHeight / 2 + 50, 20, Color.LightGray);
-        }
-
-        // ░░░ Reinicio ░░░
-        private void ResetGame()
-        {
-            gameEnded = false;
-            gameTimer.Reset();
-
-            platformManager = new PlatformManager(new Texture2D[]
-            {
-                Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass.png"),
-                Raylib.LoadTexture("Assets/Sprites/Platforms/ground_grass_small.png")
-            }, screenWidth, screenHeight);
-
-            tokenManager = new TokenManager();
-            InitialisePlayers();
-        }
-
-        // ░░░ Menú de pausa ░░░
         private void DrawPauseMenu()
         {
             Raylib.DrawRectangle(screenWidth / 4, screenHeight / 4, screenWidth / 2, screenHeight / 2, new Color(0, 0, 0, 200));
@@ -274,12 +253,23 @@ namespace SuperSmashTrees.Core
             DrawButton(exitButton, "Salir al menú");
         }
 
-        private void DrawButton(Rectangle rect, string text)
+        private void DrawGameOverScreen()
         {
-            Color bg = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), rect) ? Color.DarkGreen : Color.DarkGray;
-            Raylib.DrawRectangleRec(rect, bg);
-            Raylib.DrawText(text, (int)(rect.X + 20), (int)(rect.Y + 10), 24, Color.White);
+            string msg = "¡Tiempo finalizado!";
+            Raylib.DrawText(msg, screenWidth / 2 - Raylib.MeasureText(msg, 40) / 2, screenHeight / 2 - 100, 40, Color.Yellow);
+
+            int s1 = player1.Score, s2 = player2.Score;
+            string res = s1 > s2 ? "Jugador 1 gana" : s2 > s1 ? "Jugador 2 gana" : "¡Empate!";
+            Raylib.DrawText(res, screenWidth / 2 - Raylib.MeasureText(res, 30) / 2, screenHeight / 2, 30, Color.White);
+            Raylib.DrawText("Presiona R para reiniciar", screenWidth / 2 - 150, screenHeight / 2 + 50, 20, Color.LightGray);
         }
 
+        private void DrawButton(Rectangle r, string txt)
+        {
+            Color bg = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), r)
+                       ? Color.DarkGreen : Color.DarkGray;
+            Raylib.DrawRectangleRec(r, bg);
+            Raylib.DrawText(txt, (int)(r.X + 20), (int)(r.Y + 10), 24, Color.White);
+        }
     }
 }

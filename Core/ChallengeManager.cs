@@ -6,48 +6,36 @@ namespace SuperSmashTrees.Core
     public class ChallengeManager
     {
         private SuperSmashTrees.Structures.List<Challenge> challenges;
-        private int currentChallengeIndex;
-        private Challenge? currentChallenge = null;
+        private Challenge? currentChallenge;
         private Random rng = new Random();
+
         public ChallengeManager()
         {
-            challenges = new SuperSmashTrees.Structures.List<Challenge> ();
-            currentChallengeIndex = 0;
+            challenges = new SuperSmashTrees.Structures.List<Challenge>();
             LoadChallenges();
+            AdvanceChallenge();
         }
 
-        
-
-        public Challenge? GetActiveChallenge()
-        {
-            return currentChallenge;
-        }
-
-
-       
+        public Challenge? GetActiveChallenge() => currentChallenge;
 
         public void AdvanceChallenge()
         {
-            if (challenges.Count == 0)
-                return;
+            if (challenges.Count == 0) return;
 
-            int index = rng.Next(0, challenges.Count);
+            int index = rng.Next(challenges.Count);
             currentChallenge = challenges.Get(index);
             challenges = RemoveAt(challenges, index);
         }
 
-
         private void LoadChallenges()
         {
-            // --- BST Retos ---
             challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.MaxHeight, 5));
             challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.MaxHeight, 6));
             challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.NodeCount, 8));
             challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.NodeCount, 10));
             challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.NodeCount, 15));
-            challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.MinHeight, 4)); // BST más balanceado
+            challenges.Add(new Challenge(Challenge.TreeType.BST, Challenge.GoalType.MinHeight, 4));
 
-            // --- AVL Retos ---
             challenges.Add(new Challenge(Challenge.TreeType.AVL, Challenge.GoalType.MaxHeight, 4));
             challenges.Add(new Challenge(Challenge.TreeType.AVL, Challenge.GoalType.MaxHeight, 5));
             challenges.Add(new Challenge(Challenge.TreeType.AVL, Challenge.GoalType.NodeCount, 10));
@@ -56,48 +44,40 @@ namespace SuperSmashTrees.Core
             challenges.Add(new Challenge(Challenge.TreeType.AVL, Challenge.GoalType.MinHeight, 5));
         }
 
-
         public bool ValidateChallenge(Challenge challenge, Player player)
         {
             int result = 0;
 
             if (challenge.TargetTree == Challenge.TreeType.BST)
-            {
                 result = GetTreeStat(player.TreeBST.Root, challenge.Goal);
-            }
             else if (challenge.TargetTree == Challenge.TreeType.AVL)
-            {
                 result = GetTreeStat(player.TreeAVL.Root, challenge.Goal);
-            }
 
-            if (challenge.Goal == Challenge.GoalType.MaxHeight)
-                return result <= challenge.TargetValue;
-            else if (challenge.Goal == Challenge.GoalType.MinHeight)
-                return result >= challenge.TargetValue;
-            else if (challenge.Goal == Challenge.GoalType.NodeCount)
-                return result == challenge.TargetValue;
-
-            return false;
+            return challenge.Goal switch
+            {
+                Challenge.GoalType.MaxHeight => result <= challenge.TargetValue,
+                Challenge.GoalType.MinHeight => result >= challenge.TargetValue,
+                Challenge.GoalType.NodeCount => result == challenge.TargetValue,
+                _ => false,
+            };
         }
 
         private int GetTreeStat(object? node, Challenge.GoalType goal)
         {
-            if (node == null)
-                return 0;
+            if (node == null) return 0;
 
-            if (node is BSTNode bstNode)
+            if (node is BSTNode bst)
             {
-                if (goal == Challenge.GoalType.MaxHeight || goal == Challenge.GoalType.MinHeight)
-                    return 1 + Math.Max(GetTreeStat(bstNode.Left, goal), GetTreeStat(bstNode.Right, goal));
-                else if (goal == Challenge.GoalType.NodeCount)
-                    return 1 + GetTreeStat(bstNode.Left, goal) + GetTreeStat(bstNode.Right, goal);
+                return goal == Challenge.GoalType.NodeCount
+                    ? 1 + GetTreeStat(bst.Left, goal) + GetTreeStat(bst.Right, goal)
+                    : 1 + Math.Max(GetTreeStat(bst.Left, goal), GetTreeStat(bst.Right, goal));
             }
-            else if (node is AVLNode avlNode)
+
+            if (node is AVLNode avl)
             {
-                if (goal == Challenge.GoalType.MaxHeight || goal == Challenge.GoalType.MinHeight)
-                    return 1 + Math.Max(GetTreeStat(avlNode.Left, goal), GetTreeStat(avlNode.Right, goal));
-                else if (goal == Challenge.GoalType.NodeCount)
-                    return 1 + GetTreeStat(avlNode.Left, goal) + GetTreeStat(avlNode.Right, goal);
+                return goal == Challenge.GoalType.NodeCount
+                    ? 1 + GetTreeStat(avl.Left, goal) + GetTreeStat(avl.Right, goal)
+                    : 1 + Math.Max(GetTreeStat(avl.Left, goal), GetTreeStat(avl.Right, goal));
             }
 
             return 0;
@@ -113,6 +93,5 @@ namespace SuperSmashTrees.Core
             }
             return nueva;
         }
-
     }
 }

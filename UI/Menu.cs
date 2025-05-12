@@ -1,10 +1,6 @@
 ﻿using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using SuperSmashTrees.Utils;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SuperSmashTrees.UI
 {
@@ -18,16 +14,19 @@ namespace SuperSmashTrees.UI
         private Rectangle exitButton;
 
         public bool StartGame { get; private set; } = false;
+        public bool ShouldExit { get; private set; } = false;
 
         public Menu(int screenWidth, int screenHeight)
         {
             this.screenWidth = screenWidth;
             this.screenHeight = screenHeight;
-            background = Raylib.LoadTexture("Assets/Sprites/Backgrounds/MenuBackground.png");
+
+            background = TextureManager.Load("Assets/Sprites/Backgrounds/FondoMenu.png");
 
             float buttonWidth = 200;
             float buttonHeight = 60;
             float centerX = screenWidth / 2 - buttonWidth / 2;
+
             playButton = new Rectangle(centerX, screenHeight * 0.7f, buttonWidth, buttonHeight);
             exitButton = new Rectangle(centerX, screenHeight * 0.7f + 80, buttonWidth, buttonHeight);
         }
@@ -39,35 +38,35 @@ namespace SuperSmashTrees.UI
             if (Raylib.IsMouseButtonPressed(MouseButton.Left))
             {
                 if (Raylib.CheckCollisionPointRec(mousePos, playButton))
-                {
                     StartGame = true;
-                }
                 else if (Raylib.CheckCollisionPointRec(mousePos, exitButton))
-                {
-                    Raylib.CloseWindow();
-                }
+                    ShouldExit = true; // NO cerrar la ventana aquí mismo
             }
         }
 
         public void Draw()
         {
-            // Escala proporcional para cubrir toda la pantalla (estilo "background cover")
-            float scaleX = screenWidth / (float)background.Width;
-            float scaleY = screenHeight / (float)background.Height;
-            float scale = MathF.Max(scaleX, scaleY);
+            float scale = MathF.Max(
+                screenWidth / (float)background.Width,
+                screenHeight / (float)background.Height
+            );
 
             float drawWidth = background.Width * scale;
             float drawHeight = background.Height * scale;
 
-            Vector2 position = new Vector2(
+            Vector2 position = new(
                 (screenWidth - drawWidth) / 2,
                 (screenHeight - drawHeight) / 2
             );
 
-            Rectangle sourceRec = new Rectangle(0, 0, background.Width, background.Height);
-            Rectangle destRec = new Rectangle(position.X, position.Y, drawWidth, drawHeight);
-
-            Raylib.DrawTexturePro(background, sourceRec, destRec, Vector2.Zero, 0f, Color.White);
+            Raylib.DrawTexturePro(
+                background,
+                new Rectangle(0, 0, background.Width, background.Height),
+                new Rectangle(position.X, position.Y, drawWidth, drawHeight),
+                Vector2.Zero,
+                0f,
+                Color.White
+            );
 
             DrawButton(playButton, "JUGAR");
             DrawButton(exitButton, "SALIR");
@@ -75,8 +74,8 @@ namespace SuperSmashTrees.UI
 
         private void DrawButton(Rectangle rect, string text)
         {
-            Color bgColor = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), rect) ? Color.DarkGreen : Color.DarkGray;
-            Raylib.DrawRectangleRec(rect, bgColor);
+            Color bg = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), rect) ? Color.DarkGreen : Color.DarkGray;
+            Raylib.DrawRectangleRec(rect, bg);
             Raylib.DrawText(text, (int)(rect.X + 40), (int)(rect.Y + 15), 30, Color.RayWhite);
         }
     }

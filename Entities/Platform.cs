@@ -1,10 +1,5 @@
 ﻿using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SuperSmashTrees.Entities
 {
@@ -25,7 +20,6 @@ namespace SuperSmashTrees.Entities
         {
             int tileWidth = texture.Width;
             int tileHeight = texture.Height;
-
             int tilesToDraw = (int)(Rect.Width / (tileWidth * scale));
 
             for (int i = 0; i < tilesToDraw; i++)

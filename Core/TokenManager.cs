@@ -1,7 +1,6 @@
 ﻿using Raylib_cs;
 using SuperSmashTrees.Entities;
 using SuperSmashTrees.Structures;
-using System;
 using System.Numerics;
 
 namespace SuperSmashTrees.Core
@@ -36,41 +35,36 @@ namespace SuperSmashTrees.Core
             {
                 Token token = tokens.Get(i);
                 token.Update(delta);
-                token.Draw();
 
-                // Jugador 1
+                // Colisión con jugador 1
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player1.GetBounds()))
                 {
                     if (player1.ChallengeManager.GetActiveChallenge() != null)
                         player1.CaptureToken(token.Value);
 
-                    tokens = EliminarToken(tokens, i);
+                    tokens.RemoveAt(i);
                     i--;
                     continue;
                 }
 
-                // Jugador 2
+                // Colisión con jugador 2
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player2.GetBounds()))
                 {
                     if (player2.ChallengeManager.GetActiveChallenge() != null)
                         player2.CaptureToken(token.Value);
 
-                    tokens = EliminarToken(tokens, i);
+                    tokens.RemoveAt(i);
                     i--;
                 }
             }
-
         }
 
-        private SuperSmashTrees.Structures.List<Token> EliminarToken(SuperSmashTrees.Structures.List<Token> lista, int index)
+        public void Draw()
         {
-            var nueva = new SuperSmashTrees.Structures.List<Token>();
-            for (int i = 0; i < lista.Count; i++)
+            for (int i = 0; i < tokens.Count; i++)
             {
-                if (i != index)
-                    nueva.Add(lista.Get(i));
+                tokens.Get(i).Draw();
             }
-            return nueva;
         }
     }
 }

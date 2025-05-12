@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SuperSmashTrees.Structures
+﻿namespace SuperSmashTrees.Structures
 {
     public class AVLNode
     {
@@ -18,7 +12,7 @@ namespace SuperSmashTrees.Structures
             Value = value;
             Left = null;
             Right = null;
-            Height = 1; // Nuevo nodo empieza con altura 1
+            Height = 1;
         }
     }
 }

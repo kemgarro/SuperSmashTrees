@@ -9,8 +9,7 @@ namespace SuperSmashTrees.Entities
         private readonly KeyboardKey jumpKey;
         private readonly KeyboardKey attackKey;
 
-        public PlayerControls(KeyboardKey right, KeyboardKey left,
-                              KeyboardKey jump, KeyboardKey attack)
+        public PlayerControls(KeyboardKey right, KeyboardKey left, KeyboardKey jump, KeyboardKey attack)
         {
             moveRightKey = right;
             moveLeftKey = left;

@@ -21,7 +21,7 @@
     <None Update="Assets\Sprites\Backgrounds\GameBackground.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Sprites\Backgrounds\MenuBackground.png">
+    <None Update="Assets\Sprites\Backgrounds\FondoMenu.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\Sprites\Characters\Knight\ATTACK1\ATTACK1.png">

@@ -9,7 +9,7 @@ namespace SuperSmashTrees.UI
         public int IdleFrames { get; }
         public int RunFrames { get; }
         public int JumpFrames { get; }
-        public int AttackFrames { get; }          // 🆕
+        public int AttackFrames { get; }
 
         public CharacterOption(string name, Texture2D icon,
                                int idleFrames, int runFrames,
@@ -20,7 +20,7 @@ namespace SuperSmashTrees.UI
             IdleFrames = idleFrames;
             RunFrames = runFrames;
             JumpFrames = jumpFrames;
-            AttackFrames = attackFrames;               // 🆕
+            AttackFrames = attackFrames;
         }
     }
 }

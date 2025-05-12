@@ -1,7 +1,6 @@
 ﻿using Raylib_cs;
 using SuperSmashTrees.Core;
 using SuperSmashTrees.UI;
-using static System.Formats.Asn1.AsnWriter;
 
 class Program
 {
@@ -20,7 +19,6 @@ class Program
         Raylib.SetTargetFPS(60);
 
         Scene currentScene = Scene.Menu;
-
         CharacterOption? selected1 = null;
         CharacterOption? selected2 = null;
 
@@ -29,8 +27,9 @@ class Program
             switch (currentScene)
             {
                 case Scene.Menu:
-                    Menu menu = new Menu(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-                    while (!menu.StartGame && !Raylib.WindowShouldClose())
+                    var menu = new Menu(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+
+                    while (!menu.StartGame && !menu.ShouldExit && !Raylib.WindowShouldClose())
                     {
                         Raylib.BeginDrawing();
                         Raylib.ClearBackground(Color.Black);
@@ -39,12 +38,14 @@ class Program
                         Raylib.EndDrawing();
                     }
 
-                    if (menu.StartGame)
+                    if (menu.ShouldExit)
+                        currentScene = Scene.Exit;
+                    else if (menu.StartGame)
                         currentScene = Scene.CharacterSelect;
                     break;
 
                 case Scene.CharacterSelect:
-                    CharacterSelect selector = new CharacterSelect(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+                    var selector = new CharacterSelect(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
 
                     while (!selector.SelectionDone && !Raylib.WindowShouldClose())
                     {
@@ -61,25 +62,32 @@ class Program
                         selected2 = selector.Player2Character;
                         currentScene = Scene.Game;
                     }
-                    break;
-
-                case Scene.Game:
-                    if (selected1 != null && selected2 != null)
-                    {
-                        GameManager game = new GameManager(Raylib.GetScreenWidth(), Raylib.GetScreenHeight(), selected1, selected2);
-                        game.Run();
-
-                        // Cuando GameManager.Run() termina, volvemos al menú
-                        currentScene = Scene.Menu;
-                    }
                     else
                     {
                         currentScene = Scene.Menu;
                     }
                     break;
+
+                case Scene.Game:
+                    if (selected1 != null && selected2 != null)
+                    {
+                        GameManager game = new GameManager(
+                            Raylib.GetScreenWidth(), Raylib.GetScreenHeight(),
+                            selected1, selected2
+                        );
+                        game.Run();  // ✅ El juego se crea desde cero cada vez
+                    }
+
+                    currentScene = Scene.Menu;
+                    break;
             }
         }
 
-        Raylib.CloseWindow();
+        if (Raylib.IsWindowReady())
+        {
+            SuperSmashTrees.Utils.TextureManager.UnloadAll();
+            Raylib.CloseWindow();
+        }
     }
 }
+ 

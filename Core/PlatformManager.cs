@@ -1,7 +1,6 @@
 ﻿using Raylib_cs;
 using SuperSmashTrees.Entities;
-using SuperSmashTrees.Structures; // 👈 Importante: SOLO tu propia lista
-using System;
+using SuperSmashTrees.Structures;
 using System.Numerics;
 
 namespace SuperSmashTrees.Core
@@ -41,9 +40,9 @@ namespace SuperSmashTrees.Core
 
             int tileWidth = (int)(platformTex.Width * platformScale);
             int tileHeight = (int)(platformTex.Height * platformScale);
-
             float gameAreaWidth = screenWidth * 0.8f;
 
+            // Plataforma base (suelo)
             int groundTiles = 8;
             float baseWidth = groundTiles * tileWidth;
             float baseHeight = tileHeight;
@@ -52,6 +51,7 @@ namespace SuperSmashTrees.Core
 
             platforms.Add(new Platform(baseX, baseY, baseWidth, baseHeight, platformTex, platformScale));
 
+            // Plataformas elevadas
             int levels = 3;
             float levelHeightGap = 300;
 

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SuperSmashTrees.Structures
+﻿namespace SuperSmashTrees.Structures
 {
     public class AVLTree
     {
@@ -25,15 +19,11 @@ namespace SuperSmashTrees.Structures
             else if (value > node.Value)
                 node.Right = InsertRecursive(node.Right, value);
             else
-                return node; // No se permiten valores duplicados
+                return node;
 
-            // Actualizar altura
             node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
-
-            // Obtener balance
             int balance = GetBalance(node);
 
-            // Rotaciones
             if (balance > 1 && value < node.Left!.Value)
                 return RightRotate(node);
 
@@ -55,34 +45,22 @@ namespace SuperSmashTrees.Structures
             return node;
         }
 
-        private int GetHeight(AVLNode? node)
-        {
-            if (node == null)
-                return 0;
-            return node.Height;
-        }
+        private int GetHeight(AVLNode? node) => node?.Height ?? 0;
 
-        private int GetBalance(AVLNode? node)
-        {
-            if (node == null)
-                return 0;
-            return GetHeight(node.Left) - GetHeight(node.Right);
-        }
+        private int GetBalance(AVLNode? node) =>
+            node == null ? 0 : GetHeight(node.Left) - GetHeight(node.Right);
 
         private AVLNode RightRotate(AVLNode y)
         {
             AVLNode x = y.Left!;
             AVLNode T2 = x.Right!;
 
-            // Rotación
             x.Right = y;
             y.Left = T2;
 
-            // Actualizar alturas
             y.Height = Math.Max(GetHeight(y.Left), GetHeight(y.Right)) + 1;
             x.Height = Math.Max(GetHeight(x.Left), GetHeight(x.Right)) + 1;
 
-            // Nueva raíz
             return x;
         }
 
@@ -91,15 +69,12 @@ namespace SuperSmashTrees.Structures
             AVLNode y = x.Right!;
             AVLNode T2 = y.Left!;
 
-            // Rotación
             y.Left = x;
             x.Right = T2;
 
-            // Actualizar alturas
             x.Height = Math.Max(GetHeight(x.Left), GetHeight(x.Right)) + 1;
             y.Height = Math.Max(GetHeight(y.Left), GetHeight(y.Right)) + 1;
 
-            // Nueva raíz
             return y;
         }
     }

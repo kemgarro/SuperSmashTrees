@@ -7,24 +7,24 @@ namespace SuperSmashTrees.Entities
 {
     public class Player
     {
-        // ░░░ Animaciones ░░░
+        // Animaciones
         private readonly Texture2D[] idleFrames;
         private readonly Texture2D[] runFrames;
         private readonly Texture2D[] jumpFrames;
-        private readonly Texture2D[] attackFrames; // 🆕
+        private readonly Texture2D[] attackFrames;
 
         private float animationTimer;
         private int currentFrame;
         private readonly float frameTime = 0.07f;
 
-        // ░░░ Física ░░░
+        // Física
         private readonly float gravity = 900f;
         private readonly float jumpForce = -800f;
         private float velocityY = 0f;
         private bool isJumping = false;
-        private bool isAttacking = false; // 🆕
+        private bool isAttacking = false;
 
-        // ░░░ Propiedades públicas ░░░
+        // Propiedades públicas
         public Vector2 Position;
         public float Speed = 300f;
         public string state = "IDLE";
@@ -32,13 +32,14 @@ namespace SuperSmashTrees.Entities
 
         private readonly PlayerControls controls;
 
-        public int CompletedChallenges { get; private set; } = 0;
+        public int CompletedChallenges { get; set; } = 0;
         public SuperSmashTrees.Structures.List<int> CapturedTokens { get; } = new SuperSmashTrees.Structures.List<int>();
         public BST TreeBST { get; set; } = new BST();
         public AVLTree TreeAVL { get; set; } = new AVLTree();
-        public ChallengeManager ChallengeManager { get; } = new ChallengeManager();
+        public ChallengeManager ChallengeManager { get; set; } = new ChallengeManager();
 
-        // ░░░ Carga de sprites ░░░
+        public int Score { get; private set; } = 0;
+
         public Player(string idlePath, string runPath, string jumpPath, string attackPath,
                       int idleCount, int runCount, int jumpCount, int attackCount,
                       Vector2 startPosition, PlayerControls controls)
@@ -51,6 +52,7 @@ namespace SuperSmashTrees.Entities
             Position = startPosition;
             this.controls = controls;
 
+            // Arranca el primer reto
             ChallengeManager.AdvanceChallenge();
         }
 
@@ -67,14 +69,13 @@ namespace SuperSmashTrees.Entities
             return frames;
         }
 
-        // ░░░ Lógica principal ░░░
         public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
                            Player? otherPlayer = null, float maxGameArea = 1920f)
         {
             bool moving = false;
             string prevState = state;
 
-            // ◄ Ataque ►
+            // Ataque
             if (controls.AttackPressed() && !isAttacking)
             {
                 state = "ATTACK";
@@ -83,7 +84,7 @@ namespace SuperSmashTrees.Entities
                 animationTimer = 0f;
             }
 
-            // ◄ Movimiento (si no ataca) ►
+            // Movimiento
             if (!isAttacking)
             {
                 if (controls.MoveRight())
@@ -125,58 +126,60 @@ namespace SuperSmashTrees.Entities
                 }
             }
 
-            // Gravedad
+            // Gravedad y colisiones
             velocityY += gravity * delta;
-            Position.Y += velocityY * delta;
-
-            // Colisiones con plataformas
-            Rectangle playerRect = new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
+            float totalFall = velocityY * delta;
+            int steps = 10;
+            float stepSize = totalFall / steps;
             bool onPlatform = false;
 
-            for (int i = 0; i < platforms.Count; i++)
+            for (int s = 0; s < steps; s++)
             {
-                Rectangle plat = platforms.Get(i).Rect;
-                bool falling = velocityY >= 0;
+                Position.Y += stepSize;
+                Rectangle playerRect = GetBounds();
 
-                if (falling && Raylib.CheckCollisionRecs(playerRect, plat))
+                for (int i = 0; i < platforms.Count; i++)
                 {
-                    float playerBottom = Position.Y;
-                    float platformTop = plat.Y;
-
-                    if (playerBottom <= platformTop + 10)
+                    var plat = platforms.Get(i).Rect;
+                    bool falling = velocityY >= 0;
+                    if (Raylib.CheckCollisionRecs(playerRect, plat))
                     {
-                        Position.Y = platformTop;
-                        velocityY = 0f;
-                        isJumping = false;
-                        onPlatform = true;
-
-                        if (!moving && !isAttacking)
-                            state = "IDLE";
+                        float playerBottom = Position.Y;
+                        float platformTop = plat.Y;
+                        if (falling && playerBottom <= platformTop + 10)
+                        {
+                            Position.Y = platformTop;
+                            velocityY = 0f;
+                            isJumping = false;
+                            onPlatform = true;
+                            if (!moving && !isAttacking) state = "IDLE";
+                            break;
+                        }
                     }
                 }
+                if (onPlatform) break;
             }
 
-            if (!onPlatform && velocityY > 0 && !isAttacking)
-                state = "JUMP";
+            if (onPlatform && !moving && !isAttacking) state = "IDLE";
+            if (!onPlatform && velocityY > 0 && !isAttacking) state = "JUMP";
 
-            // ░░░ Animaciones ░░░
+            // Animación
             if (state != prevState)
             {
                 currentFrame = 0;
                 animationTimer = 0f;
             }
-
             animationTimer += delta;
             if (animationTimer >= frameTime)
             {
                 animationTimer = 0f;
-                int total = GetCurrentFrames().Length;
+                var frames = GetCurrentFrames();
+                int total = frames.Length;
 
                 if (state == "ATTACK")
                 {
-                    if (currentFrame < total - 1)
-                        currentFrame++;
-                    else // Fin del ataque
+                    if (currentFrame < total - 1) currentFrame++;
+                    else
                     {
                         isAttacking = false;
                         state = isJumping ? "JUMP" : moving ? "RUN" : "IDLE";
@@ -185,8 +188,7 @@ namespace SuperSmashTrees.Entities
                 }
                 else if (state == "JUMP")
                 {
-                    if (currentFrame < jumpFrames.Length - 3)
-                        currentFrame++;
+                    if (currentFrame < jumpFrames.Length - 3) currentFrame++;
                     else
                     {
                         currentFrame++;
@@ -194,81 +196,39 @@ namespace SuperSmashTrees.Entities
                             currentFrame = jumpFrames.Length - 3;
                     }
                 }
-                else // RUN o IDLE
+                else
                 {
                     currentFrame = (currentFrame + 1) % total;
                 }
             }
 
-            // Límites del escenario
+            // Límites de pantalla
             if (Position.X < 0) Position.X = 0;
             if (Position.X > maxGameArea) Position.X = maxGameArea;
 
-            // ░░░ Colisión con la espada (área de ataque) ░░░
-            if (isAttacking && otherPlayer != null)
+            // Colisión de espada
+            if (isAttacking && otherPlayer != null && currentFrame == attackFrames.Length - 1)
             {
-                // Solo empuja después de que la animación haya terminado
-                if (currentFrame == attackFrames.Length - 1)
+                var swordArea = GetSwordCollisionArea();
+                if (Raylib.CheckCollisionRecs(swordArea, otherPlayer.GetBounds()))
                 {
-                    // Define el área de colisión de la espada a ambos lados, y la hace más grande
-                    Rectangle swordCollisionArea = GetSwordCollisionArea();
-
-                    // Si hay colisión con el otro jugador, empujamos al otro jugador
-                    if (Raylib.CheckCollisionRecs(swordCollisionArea, otherPlayer.GetBounds()))
-                    {
-                        float pushForce = 150f; // Controla la fuerza del empuje
-                        if (facingLeft)
-                        {
-                            otherPlayer.Position.X -= pushForce;  // Empuja hacia la izquierda
-                        }
-                        else
-                        {
-                            otherPlayer.Position.X += pushForce;  // Empuja hacia la derecha
-                        }
-                    }
+                    float push = 150f;
+                    if (facingLeft) otherPlayer.Position.X -= push;
+                    else otherPlayer.Position.X += push;
+                    AddScore(2);
                 }
             }
-        }
 
-        // ░░░ Generar área de colisión para la espada (más grande) ░░░
-        private Rectangle GetSwordCollisionArea()
-        {
-            // Aumentamos el tamaño del hitbox (más grande)
-            float width = 100f; // Aumentamos el ancho del área de la espada
-            float height = 40f; // Aumentamos la altura del área de la espada
-
-            // Si el jugador está mirando a la izquierda, la espada estará a la izquierda de él
-            float xOffset = facingLeft ? Position.X - width : Position.X + 22; // Ajusta la posición de la espada
-            float yOffset = Position.Y - 30; // Ajusta la posición de la espada en el eje Y
-
-            return new Rectangle(xOffset, yOffset, width, height);
-        }
-
-        // ░░░ Render ░░░
-        public void Draw()
-        {
-            var frames = GetCurrentFrames();
-            Texture2D frame = frames[currentFrame];
-
-            float scale = 4f;
-            Vector2 drawPos = new Vector2(
-                Position.X - (frame.Width * scale) / 2,
-                Position.Y - (frame.Height * scale)
-            );
-
-            if (facingLeft)
+            // Caída del escenario
+            if (Position.Y > 1080)
             {
-                Rectangle src = new Rectangle(0, 0, -frame.Width, frame.Height);
-                Rectangle dest = new Rectangle(drawPos.X, drawPos.Y, frame.Width * scale, frame.Height * scale);
-                Raylib.DrawTexturePro(frame, src, dest, Vector2.Zero, 0f, Color.White);
-            }
-            else
-            {
-                Raylib.DrawTextureEx(frame, drawPos, 0f, scale, Color.White);
+                Position = new Vector2(100, 100);
+                velocityY = 0;
+                isJumping = false;
+                if (otherPlayer != null) otherPlayer.AddScore(5);
             }
         }
 
-        // ░░░ Utilidades ░░░
         private Texture2D[] GetCurrentFrames() => state switch
         {
             "RUN" => runFrames,
@@ -277,18 +237,64 @@ namespace SuperSmashTrees.Entities
             _ => idleFrames,
         };
 
-        public Rectangle GetBounds() => new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
-
-        // ░░░ Reto y tokens ░░░
-        public void CaptureToken(int tokenValue)
+        public void Draw()
         {
-            CapturedTokens.Add(tokenValue);
-            var challenge = ChallengeManager.GetActiveChallenge();
-            if (challenge == null) return;
-            if (challenge.TargetTree == Challenge.TreeType.BST) TreeBST.Insert(tokenValue);
-            if (challenge.TargetTree == Challenge.TreeType.AVL) TreeAVL.Insert(tokenValue);
+            var frames = GetCurrentFrames();
+            var frame = frames[currentFrame];
+            float scale = 4f;
+            var pos = new Vector2(
+                Position.X - (frame.Width * scale) / 2,
+                Position.Y - (frame.Height * scale)
+            );
+
+            if (facingLeft)
+            {
+                var src = new Rectangle(0, 0, -frame.Width, frame.Height);
+                var dest = new Rectangle(pos.X, pos.Y, frame.Width * scale, frame.Height * scale);
+                Raylib.DrawTexturePro(frame, src, dest, Vector2.Zero, 0f, Color.White);
+            }
+            else
+            {
+                Raylib.DrawTextureEx(frame, pos, 0f, scale, Color.White);
+            }
         }
 
-        public void IncrementChallenges() => CompletedChallenges++;
+        public Rectangle GetBounds() =>
+            new Rectangle(Position.X - 22, Position.Y - 34, 44, 34);
+
+        public void CaptureToken(int value)
+        {
+            CapturedTokens.Add(value);
+            var active = ChallengeManager.GetActiveChallenge();
+            if (active != null)
+            {
+                if (active.TargetTree == Challenge.TreeType.BST) TreeBST.Insert(value);
+                else TreeAVL.Insert(value);
+            }
+        }
+
+        public void AddScore(int amount) => Score += amount;
+        public void ResetScore() => Score = 0;
+
+        // Limpia TODO el estado del jugador
+        public void ClearProgress()
+        {
+            ResetScore();
+            CompletedChallenges = 0;
+            CapturedTokens.Clear();
+            TreeBST = new BST();
+            TreeAVL = new AVLTree();
+            ChallengeManager = new ChallengeManager();
+        }
+
+        private Rectangle GetSwordCollisionArea()
+        {
+            float width = 100f, height = 40f;
+            float xOffset = facingLeft
+                ? Position.X - width
+                : Position.X + 22;
+            float yOffset = Position.Y - 30;
+            return new Rectangle(xOffset, yOffset, width, height);
+        }
     }
 }

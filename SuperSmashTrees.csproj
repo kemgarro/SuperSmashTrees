@@ -18,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Assets\Sprites\Backgrounds\FondoSelect.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Sprites\Backgrounds\GameBackground.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -227,6 +230,9 @@
     </None>
     <None Update="Assets\Sprites\Characters\Samurai\RUN\RUN9.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Sprites\Icons\gear.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Assets\Sprites\Icons\Knight\IDLE1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

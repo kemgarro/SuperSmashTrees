@@ -25,6 +25,11 @@ namespace SuperSmashTrees.Core
         private readonly CharacterOption player1Option, player2Option;
 
         private readonly Rectangle configButton, resumeButton, restartButton, exitButton;
+        private readonly Rectangle gameOverRestartButton;
+        private readonly Rectangle gameOverExitButton;
+
+        private Texture2D gearIcon;
+
 
         public GameManager(int width, int height,
                            CharacterOption p1Opt, CharacterOption p2Opt)
@@ -41,6 +46,11 @@ namespace SuperSmashTrees.Core
             resumeButton = new Rectangle(width / 2 - 100, height / 2 - 60, 200, 40);
             restartButton = new Rectangle(width / 2 - 100, height / 2, 200, 40);
             exitButton = new Rectangle(width / 2 - 100, height / 2 + 60, 200, 40);
+            gameOverRestartButton = new Rectangle(screenWidth / 2 - 100, screenHeight / 2, 200, 40);
+            gameOverExitButton = new Rectangle(screenWidth / 2 - 100, screenHeight / 2 + 60, 200, 40);
+
+            gearIcon = TextureManager.Load("Assets/Sprites/Icons/gear.png");
+
 
             background = TextureManager.Load("Assets/Sprites/Backgrounds/GameBackground.png");
 
@@ -59,10 +69,20 @@ namespace SuperSmashTrees.Core
                     gameEnded = true;
 
                 // Permitir reiniciar con R en pantalla de fin
-                if (gameEnded && Raylib.IsKeyPressed(KeyboardKey.R))
+                if (gameEnded)
                 {
-                    ResetGame();
+                    DrawGameOverScreen();
+
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    {
+                        if (Raylib.CheckCollisionPointRec(mouse, gameOverRestartButton))
+                            ResetGame();
+
+                        else if (Raylib.CheckCollisionPointRec(mouse, gameOverExitButton))
+                            shouldExit = true;
+                    }
                 }
+
 
                 if (!gameEnded && !isPaused)
                 {
@@ -223,8 +243,15 @@ namespace SuperSmashTrees.Core
             DrawPlayerInfo(player1, "Jugador 1", cx, 50, Color.Green);
             DrawPlayerInfo(player2, "Jugador 2", cx, 400, Color.Blue);
 
-            Raylib.DrawRectangleRec(configButton, Color.Gray);
-            Raylib.DrawText("⚙", (int)configButton.X + 10, (int)configButton.Y + 5, 24, Color.White);
+            // Ícono encima, centrado dentro del botón
+            Vector2 iconPos = new Vector2(
+                configButton.X + (configButton.Width - gearIcon.Width * 1.5f) / 2,
+                configButton.Y + (configButton.Height - gearIcon.Height * 1.5f) / 2
+            );
+
+            Raylib.DrawTextureEx(gearIcon, iconPos, 0f, 1.5f, Color.White);
+
+
         }
 
         private void DrawPlayerInfo(Player p, string label, float cx, int y, Color col)
@@ -255,14 +282,31 @@ namespace SuperSmashTrees.Core
 
         private void DrawGameOverScreen()
         {
-            string msg = "¡Tiempo finalizado!";
-            Raylib.DrawText(msg, screenWidth / 2 - Raylib.MeasureText(msg, 40) / 2, screenHeight / 2 - 100, 40, Color.Yellow);
+            // Fondo oscuro semitransparente
+            Raylib.DrawRectangle(0, 0, screenWidth, screenHeight, new Color(0, 0, 0, 200));
 
+            // Título
+            string msg = "¡Tiempo finalizado!";
+            Raylib.DrawText(msg,
+                screenWidth / 2 - Raylib.MeasureText(msg, 40) / 2,
+                screenHeight / 2 - 100,
+                40, Color.Yellow
+            );
+
+            // Ganador
             int s1 = player1.Score, s2 = player2.Score;
             string res = s1 > s2 ? "Jugador 1 gana" : s2 > s1 ? "Jugador 2 gana" : "¡Empate!";
-            Raylib.DrawText(res, screenWidth / 2 - Raylib.MeasureText(res, 30) / 2, screenHeight / 2, 30, Color.White);
-            Raylib.DrawText("Presiona R para reiniciar", screenWidth / 2 - 150, screenHeight / 2 + 50, 20, Color.LightGray);
+            Raylib.DrawText(res,
+                screenWidth / 2 - Raylib.MeasureText(res, 30) / 2,
+                screenHeight / 2 - 40,
+                30, Color.White
+            );
+
+            // Botones
+            DrawButton(gameOverRestartButton, "Reiniciar");
+            DrawButton(gameOverExitButton, "Salir al menú");
         }
+
 
         private void DrawButton(Rectangle r, string txt)
         {

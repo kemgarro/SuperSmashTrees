@@ -1,23 +1,22 @@
 ﻿using Raylib_cs;
 using SuperSmashTrees.Utils;
+using System;
 using System.Numerics;
 
 namespace SuperSmashTrees.UI
 {
     public class CharacterSelect
     {
-        private CharacterOption[] availableCharacters;
+        private readonly Texture2D background;
+        private readonly CharacterOption[] availableCharacters;
         private int selectedIndexPlayer1 = 0;
         private int selectedIndexPlayer2 = 1;
 
         private readonly int screenWidth;
         private readonly int screenHeight;
 
-        private bool player1Confirmed = false;
-        private bool player2Confirmed = false;
 
         public bool SelectionDone { get; private set; } = false;
-
         public CharacterOption Player1Character => availableCharacters[selectedIndexPlayer1];
         public CharacterOption Player2Character => availableCharacters[selectedIndexPlayer2];
 
@@ -25,65 +24,86 @@ namespace SuperSmashTrees.UI
         {
             screenWidth = width;
             screenHeight = height;
+            // Carga el fondo del selector (asegúrate en Visual Studio/IDE de marcar "Copy to Output Directory")
+            background = TextureManager.Load("Assets/Sprites/Backgrounds/FondoSelect.png");
 
             availableCharacters = new CharacterOption[]
             {
-                new CharacterOption("Samurai", TextureManager.Load("Assets/Sprites/Icons/Samurai/IDLE1.png"), 10, 16, 9, 7),
-                new CharacterOption("Knight",  TextureManager.Load("Assets/Sprites/Icons/Knight/IDLE1.png"), 7, 8, 5, 6)
+                new CharacterOption("Samurai", TextureManager.Load("Assets/Sprites/Icons/Samurai/IDLE1.png"), 10,16,9,7),
+                new CharacterOption("Knight",  TextureManager.Load("Assets/Sprites/Icons/Knight/IDLE1.png"), 7,8,5,6)
             };
         }
 
+        private bool player1Confirmed = false;
+        private bool player2Confirmed = false;
+
         public void Update()
         {
-            if (Raylib.IsKeyPressed(KeyboardKey.Enter)) player1Confirmed = true;
-            if (Raylib.IsKeyPressed(KeyboardKey.Space)) player2Confirmed = true;
-
-            if (player1Confirmed && player2Confirmed)
-                SelectionDone = true;
+            if (!player1Confirmed && Raylib.IsKeyPressed(KeyboardKey.Enter)) player1Confirmed = true;
+            if (!player2Confirmed && Raylib.IsKeyPressed(KeyboardKey.Space)) player2Confirmed = true;
+            if (player1Confirmed && player2Confirmed) SelectionDone = true;
 
             if (!player1Confirmed)
             {
-                if (Raylib.IsKeyPressed(KeyboardKey.Left))
-                    selectedIndexPlayer1 = (selectedIndexPlayer1 - 1 + availableCharacters.Length) % availableCharacters.Length;
-                if (Raylib.IsKeyPressed(KeyboardKey.Right))
-                    selectedIndexPlayer1 = (selectedIndexPlayer1 + 1) % availableCharacters.Length;
+                if (Raylib.IsKeyPressed(KeyboardKey.Left)) selectedIndexPlayer1 = (selectedIndexPlayer1 - 1 + availableCharacters.Length) % availableCharacters.Length;
+                if (Raylib.IsKeyPressed(KeyboardKey.Right)) selectedIndexPlayer1 = (selectedIndexPlayer1 + 1) % availableCharacters.Length;
             }
-
             if (!player2Confirmed)
             {
-                if (Raylib.IsKeyPressed(KeyboardKey.A))
-                    selectedIndexPlayer2 = (selectedIndexPlayer2 - 1 + availableCharacters.Length) % availableCharacters.Length;
-                if (Raylib.IsKeyPressed(KeyboardKey.D))
-                    selectedIndexPlayer2 = (selectedIndexPlayer2 + 1) % availableCharacters.Length;
+                if (Raylib.IsKeyPressed(KeyboardKey.A)) selectedIndexPlayer2 = (selectedIndexPlayer2 - 1 + availableCharacters.Length) % availableCharacters.Length;
+                if (Raylib.IsKeyPressed(KeyboardKey.D)) selectedIndexPlayer2 = (selectedIndexPlayer2 + 1) % availableCharacters.Length;
             }
         }
 
         public void Draw()
         {
-            Raylib.DrawText("SELECCIÓN DE PERSONAJE", screenWidth / 2 - 200, 50, 30, Color.DarkGreen);
+            // 1) Dibuja el fondo escalado "cover"
+            float scaleX = screenWidth / (float)background.Width;
+            float scaleY = screenHeight / (float)background.Height;
+            float scale = MathF.Max(scaleX, scaleY);
+            float drawW = background.Width * scale;
+            float drawH = background.Height * scale;
+            Vector2 pos = new Vector2((screenWidth - drawW) / 2, (screenHeight - drawH) / 2);
 
-            DrawPlayerSelector("Jugador 1", selectedIndexPlayer1, screenWidth / 4);
-            DrawPlayerSelector("Jugador 2", selectedIndexPlayer2, (screenWidth / 4) * 3);
+            Raylib.DrawTexturePro(
+                background,
+                new Rectangle(0, 0, background.Width, background.Height),
+                new Rectangle(pos.X, pos.Y, drawW, drawH),
+                Vector2.Zero,
+                0f,
+                Color.White
+            );
 
-            Raylib.DrawText("Presiona ENTER para confirmar", screenWidth / 2 - 150, screenHeight - 60, 20, Color.LightGray);
-            Raylib.DrawText("¡Personaje seleccionado!", screenWidth / 2 - 150, screenHeight - 90, 20, Color.Yellow);
+            // 2) Texto y selectores
+
+            DrawPlayerSelector("Jugador 1", selectedIndexPlayer1, (int)(screenWidth * 0.35f), 450);
+            DrawPlayerSelector("Jugador 2", selectedIndexPlayer2, (int)(screenWidth * 0.65f), 450);
+
         }
 
-        private void DrawPlayerSelector(string title, int index, int centerX)
+        private void DrawPlayerSelector(string label, int index, int centerX, int iconY)
         {
-            CharacterOption option = availableCharacters[index];
+            var opt = availableCharacters[index];
             float scale = 4f;
-            int iconWidth = (int)(option.Icon.Width * scale);
-            int iconHeight = (int)(option.Icon.Height * scale);
-            Vector2 iconPosition = new(centerX - iconWidth / 2, 200);
+            int w = (int)(opt.Icon.Width * scale);
+            int h = (int)(opt.Icon.Height * scale);
+            Vector2 p = new Vector2(centerX - w / 2, iconY);
 
-            Raylib.DrawText(title, centerX - Raylib.MeasureText(title, 20) / 2, 150, 20, Color.RayWhite);
-            Raylib.DrawTextureEx(option.Icon, iconPosition, 0f, scale, Color.White);
-            Raylib.DrawText(option.Name, centerX - Raylib.MeasureText(option.Name, 20) / 2,
-                            (int)(iconPosition.Y + iconHeight + 10), 20, Color.LightGray);
+            Raylib.DrawText(label, centerX - Raylib.MeasureText(label, 20) / 2, iconY - 40, 20, Color.RayWhite);
+            Raylib.DrawTextureEx(opt.Icon, p, 0f, scale, Color.White);
+            Raylib.DrawText(opt.Name, centerX - Raylib.MeasureText(opt.Name, 20) / 2, (int)(p.Y + h + 10), 20, Color.LightGray);
+            Raylib.DrawRectangleLinesEx(new Rectangle(p.X - 10, p.Y - 10, w + 20, h + 20), 3, Color.Green);
 
-            Rectangle outline = new Rectangle(iconPosition.X - 10, iconPosition.Y - 10, iconWidth + 20, iconHeight + 20);
-            Raylib.DrawRectangleLinesEx(outline, 3, Color.Green);
+            Raylib.DrawText("ENTER: confirma P1 / SPACE: confirma P2",
+                           screenWidth / 2 - 180, screenHeight - 60, 20, Color.LightGray);
+
+            bool confirmed = (label == "Jugador 1" ? player1Confirmed : player2Confirmed);
+            if (confirmed)
+            {
+                Raylib.DrawText("¡Seleccionado!",
+                               centerX - Raylib.MeasureText("¡Seleccionado!", 20) / 2,
+                               screenHeight - 90, 20, Color.Yellow);
+            }
         }
     }
 }

@@ -30,7 +30,8 @@ namespace SuperSmashTrees.UI
             availableCharacters = new CharacterOption[]
             {
                 new CharacterOption("Samurai", TextureManager.Load("Assets/Sprites/Icons/Samurai/IDLE1.png"), 10,16,9,7),
-                new CharacterOption("Knight",  TextureManager.Load("Assets/Sprites/Icons/Knight/IDLE1.png"), 7,8,5,6)
+                new CharacterOption("Knight",  TextureManager.Load("Assets/Sprites/Icons/Knight/IDLE1.png"), 7,8,5,6),
+                new CharacterOption("Demon", TextureManager.Load("Assets/Sprites/Icons/Demon/IDLE1.png"), 6,8,9,6),
             };
         }
 

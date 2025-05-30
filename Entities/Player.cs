@@ -52,7 +52,6 @@ namespace SuperSmashTrees.Entities
             Position = startPosition;
             this.controls = controls;
 
-            // Arranca el primer reto
             ChallengeManager.AdvanceChallenge();
         }
 
@@ -70,7 +69,7 @@ namespace SuperSmashTrees.Entities
         }
 
         public void Update(float delta, SuperSmashTrees.Structures.List<Platform> platforms,
-                           Player? otherPlayer = null, float maxGameArea = 1920f)
+                           Player[] otherPlayers, float maxGameArea = 1920f)
         {
             bool moving = false;
             string prevState = state;
@@ -84,37 +83,46 @@ namespace SuperSmashTrees.Entities
                 animationTimer = 0f;
             }
 
-            // Movimiento
+            // Movimiento (solo si no ataca)
             if (!isAttacking)
             {
                 if (controls.MoveRight())
                 {
                     Position.X += Speed * delta;
-                    if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+
+                    // Chequear colisiones y empujar con todos los otros jugadores
+                    foreach (var otherPlayer in otherPlayers)
                     {
-                        Position.X -= 5f;
-                        otherPlayer.Position.X += 5f;
-                    }
-                    else
-                    {
-                        state = "RUN";
-                        facingLeft = false;
-                        moving = true;
+                        if (Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+                        {
+                            Position.X -= 5f;
+                            otherPlayer.Position.X += 5f;
+                        }
+                        else
+                        {
+                            state = "RUN";
+                            facingLeft = false;
+                            moving = true;
+                        }
                     }
                 }
                 else if (controls.MoveLeft())
                 {
                     Position.X -= Speed * delta;
-                    if (otherPlayer != null && Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+
+                    foreach (var otherPlayer in otherPlayers)
                     {
-                        Position.X += 5f;
-                        otherPlayer.Position.X -= 5f;
-                    }
-                    else
-                    {
-                        state = "RUN";
-                        facingLeft = true;
-                        moving = true;
+                        if (Raylib.CheckCollisionRecs(GetBounds(), otherPlayer.GetBounds()))
+                        {
+                            Position.X += 5f;
+                            otherPlayer.Position.X -= 5f;
+                        }
+                        else
+                        {
+                            state = "RUN";
+                            facingLeft = true;
+                            moving = true;
+                        }
                     }
                 }
 
@@ -126,7 +134,7 @@ namespace SuperSmashTrees.Entities
                 }
             }
 
-            // Gravedad y colisiones
+            // Gravedad y colisiones con plataformas
             velocityY += gravity * delta;
             float totalFall = velocityY * delta;
             int steps = 10;
@@ -206,16 +214,19 @@ namespace SuperSmashTrees.Entities
             if (Position.X < 0) Position.X = 0;
             if (Position.X > maxGameArea) Position.X = maxGameArea;
 
-            // Colisión de espada
-            if (isAttacking && otherPlayer != null && currentFrame == attackFrames.Length - 1)
+            // Colisión de espada (ataque)
+            if (isAttacking && currentFrame == attackFrames.Length - 1)
             {
                 var swordArea = GetSwordCollisionArea();
-                if (Raylib.CheckCollisionRecs(swordArea, otherPlayer.GetBounds()))
+                foreach (var otherPlayer in otherPlayers)
                 {
-                    float push = 150f;
-                    if (facingLeft) otherPlayer.Position.X -= push;
-                    else otherPlayer.Position.X += push;
-                    AddScore(2);
+                    if (Raylib.CheckCollisionRecs(swordArea, otherPlayer.GetBounds()))
+                    {
+                        float push = 150f;
+                        if (facingLeft) otherPlayer.Position.X -= push;
+                        else otherPlayer.Position.X += push;
+                        AddScore(2);
+                    }
                 }
             }
 
@@ -225,7 +236,10 @@ namespace SuperSmashTrees.Entities
                 Position = new Vector2(100, 100);
                 velocityY = 0;
                 isJumping = false;
-                if (otherPlayer != null) otherPlayer.AddScore(5);
+                foreach (var otherPlayer in otherPlayers)
+                {
+                    otherPlayer.AddScore(5);
+                }
             }
         }
 

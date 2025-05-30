@@ -17,12 +17,13 @@ namespace SuperSmashTrees.Core
         private readonly int screenWidth, screenHeight;
         private readonly float sidebarWidth;
 
-        private Player player1, player2;
+        private Player player1, player2, player3;
+
 
         private readonly Timer gameTimer;
         private bool gameEnded, isPaused, shouldExit;
 
-        private readonly CharacterOption player1Option, player2Option;
+        private readonly CharacterOption player1Option, player2Option, player3Option;
 
         private readonly Rectangle configButton, resumeButton, restartButton, exitButton;
         private readonly Rectangle gameOverRestartButton;
@@ -32,7 +33,7 @@ namespace SuperSmashTrees.Core
 
 
         public GameManager(int width, int height,
-                           CharacterOption p1Opt, CharacterOption p2Opt)
+                           CharacterOption p1Opt, CharacterOption p2Opt, CharacterOption p3Opt)
         {
             screenWidth = width;
             screenHeight = height;
@@ -41,6 +42,7 @@ namespace SuperSmashTrees.Core
 
             player1Option = p1Opt;
             player2Option = p2Opt;
+            player3Option = p3Opt;
 
             configButton = new Rectangle(width - 60, 20, 40, 40);
             resumeButton = new Rectangle(width / 2 - 100, height / 2 - 60, 200, 40);
@@ -95,13 +97,15 @@ namespace SuperSmashTrees.Core
 
                     // Actualizar lógica
                     gameTimer.Update(delta);
-                    tokenManager.Update(delta, screenWidth * 0.8f, player1, player2);
+                    tokenManager.Update(delta, screenWidth * 0.8f, player1, player2, player3);
 
                     CheckChallengeCompletion(player1);
                     CheckChallengeCompletion(player2);
+                    CheckChallengeCompletion(player3); // Si decides usar un tercer jugador
 
-                    player1.Update(delta, platformManager.GetPlatforms(), player2, screenWidth * 0.8f);
-                    player2.Update(delta, platformManager.GetPlatforms(), player1, screenWidth * 0.8f);
+                    player1.Update(delta, platformManager.GetPlatforms(), new Player[] { player2, player3 }, screenWidth * 0.8f);
+                    player2.Update(delta, platformManager.GetPlatforms(), new Player[] { player1, player3 }, screenWidth * 0.8f);
+                    player3.Update(delta, platformManager.GetPlatforms(), new Player[] { player1, player2 }, screenWidth * 0.8f);
                 }
                 else if (isPaused && Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
@@ -128,6 +132,7 @@ namespace SuperSmashTrees.Core
                 {
                     player1.Draw();
                     player2.Draw();
+                    player3.Draw(); // Si decides usar un tercer jugador
                 }
 
                 DrawSidebar(screenWidth * 0.8f);
@@ -156,28 +161,51 @@ namespace SuperSmashTrees.Core
 
             tokenManager = new TokenManager();
 
-            player1 = ResetPlayer(player1Option, true);
-            player2 = ResetPlayer(player2Option, false);
+            player1 = ResetPlayer(player1Option, true, 1);
+            player2 = ResetPlayer(player2Option, false, 2);
+            player3 = ResetPlayer(player3Option, false, 3); // Si decides usar un tercer jugador
 
             // Limpia TODO el estado de los jugadores
             player1.ClearProgress();
             player2.ClearProgress();
         }
 
-        private Player ResetPlayer(CharacterOption opt, bool first)
+        private Player ResetPlayer(CharacterOption opt, bool first, int playerNumber)
         {
             var ground = platformManager.GetPlatforms().Get(0);
             float scale = 4f;
             int spriteW = 22;
             float margin = 50f, y = ground.Rect.Y;
 
-            Vector2 start = first
-                ? new Vector2(ground.Rect.X + margin + (spriteW * scale) / 2, y)
-                : new Vector2(ground.Rect.X + ground.Rect.Width - margin - (spriteW * scale) / 2, y);
+            Vector2 start;
 
-            var controls = first
-                ? new PlayerControls(KeyboardKey.D, KeyboardKey.A, KeyboardKey.W, KeyboardKey.F)
-                : new PlayerControls(KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Up, KeyboardKey.RightControl);
+            if (playerNumber == 1)
+            {
+                start = new Vector2(ground.Rect.X + margin + (spriteW * scale) / 2, y);
+            }
+            else if (playerNumber == 2)
+            {
+                start = new Vector2(ground.Rect.X + ground.Rect.Width - margin - (spriteW * scale) / 2, y);
+            }
+            else // jugador 3, por ejemplo en el centro
+            {
+                start = new Vector2(ground.Rect.X + ground.Rect.Width / 2, y);
+            }
+
+            PlayerControls controls;
+
+            if (playerNumber == 1)
+            {
+                controls = new PlayerControls(KeyboardKey.D, KeyboardKey.A, KeyboardKey.W, KeyboardKey.F);
+            }
+            else if (playerNumber == 2)
+            {
+                controls = new PlayerControls(KeyboardKey.Right, KeyboardKey.Left, KeyboardKey.Up, KeyboardKey.RightControl);
+            }
+            else // jugador 3 con nuevas teclas (puedes ajustar)
+            {
+                controls = new PlayerControls(KeyboardKey.L, KeyboardKey.J, KeyboardKey.I, KeyboardKey.K);
+            }
 
             string basePath = $"Assets/Sprites/Characters/{opt.Name}";
             return new Player(
@@ -242,6 +270,7 @@ namespace SuperSmashTrees.Core
             float cx = x0 + sidebarWidth / 2;
             DrawPlayerInfo(player1, "Jugador 1", cx, 50, Color.Green);
             DrawPlayerInfo(player2, "Jugador 2", cx, 400, Color.Blue);
+            DrawPlayerInfo(player3, "Jugador 3", cx, 750, Color.Red); // Si decides usar un tercer jugador
 
             // Ícono encima, centrado dentro del botón
             Vector2 iconPos = new Vector2(

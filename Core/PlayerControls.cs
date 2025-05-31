@@ -2,7 +2,7 @@
 
 namespace SuperSmashTrees.Entities
 {
-    public class PlayerControls
+    public class PlayerControls : IPlayerControls
     {
         private readonly KeyboardKey moveRightKey;
         private readonly KeyboardKey moveLeftKey;

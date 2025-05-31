@@ -12,6 +12,7 @@ namespace SuperSmashTrees.Entities
         private readonly Texture2D[] runFrames;
         private readonly Texture2D[] jumpFrames;
         private readonly Texture2D[] attackFrames;
+        private readonly IPlayerControls controls;
 
         private float animationTimer;
         private int currentFrame;
@@ -30,7 +31,6 @@ namespace SuperSmashTrees.Entities
         public string state = "IDLE";
         private bool facingLeft = false;
 
-        private readonly PlayerControls controls;
 
         public int CompletedChallenges { get; set; } = 0;
         public SuperSmashTrees.Structures.List<int> CapturedTokens { get; } = new SuperSmashTrees.Structures.List<int>();
@@ -41,8 +41,8 @@ namespace SuperSmashTrees.Entities
         public int Score { get; private set; } = 0;
 
         public Player(string idlePath, string runPath, string jumpPath, string attackPath,
-                      int idleCount, int runCount, int jumpCount, int attackCount,
-                      Vector2 startPosition, PlayerControls controls)
+              int idleCount, int runCount, int jumpCount, int attackCount,
+              Vector2 startPosition, IPlayerControls controls)
         {
             idleFrames = LoadFrames(idlePath, idleCount, "IDLE");
             runFrames = LoadFrames(runPath, runCount, "RUN");

@@ -264,7 +264,7 @@ namespace SuperSmashTrees.Core
             string t = $"Tiempo: {gameTimer.GetFormattedTime()}";
             int tx = (int)(x0 + 20), ty = screenHeight - 40;
             Raylib.DrawText(t, tx, ty, 24, Color.White);
-            Raylib.DrawText($"P1: {player1.Score}  P2: {player2.Score}",
+            Raylib.DrawText($"P1: {player1.Score}  P2: {player2.Score} P3: {player3.Score}",
                             tx + Raylib.MeasureText(t, 24), ty, 24, Color.LightGray);
 
             float cx = x0 + sidebarWidth / 2;
@@ -323,8 +323,26 @@ namespace SuperSmashTrees.Core
             );
 
             // Ganador
-            int s1 = player1.Score, s2 = player2.Score;
-            string res = s1 > s2 ? "Jugador 1 gana" : s2 > s1 ? "Jugador 2 gana" : "¡Empate!";
+            int s1 = player1.Score, s2 = player2.Score , s3 = player3.Score;
+            string res = "";
+
+            if (s1 > s2 && s1 > s3)
+                res = "¡Jugador 1 gana!";
+            else if (s2 > s1 && s2 > s3)
+                res = "¡Jugador 2 gana!";
+            else if (s3 > s1 && s3 > s2)
+                res = "¡Jugador 3 gana!";
+            else
+                res = "¡Empate!";
+
+            Raylib.DrawText(
+                res,
+                screenWidth / 2 - Raylib.MeasureText(res, 30) / 2,
+                screenHeight / 2 - 40,
+                30,
+                Color.White
+            );
+
             Raylib.DrawText(res,
                 screenWidth / 2 - Raylib.MeasureText(res, 30) / 2,
                 screenHeight / 2 - 40,

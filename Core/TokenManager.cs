@@ -20,7 +20,7 @@ namespace SuperSmashTrees.Core
             rng = new Random();
         }
 
-        public void Update(float delta, float gameAreaWidth, Player player1, Player player2)
+        public void Update(float delta, float gameAreaWidth, Player player1, Player player2, Player player3)
         {
             spawnTimer += delta;
             if (spawnTimer >= spawnInterval)
@@ -36,7 +36,6 @@ namespace SuperSmashTrees.Core
                 Token token = tokens.Get(i);
                 token.Update(delta);
 
-                // Colisión con jugador 1
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player1.GetBounds()))
                 {
                     if (player1.ChallengeManager.GetActiveChallenge() != null)
@@ -47,11 +46,20 @@ namespace SuperSmashTrees.Core
                     continue;
                 }
 
-                // Colisión con jugador 2
                 if (Raylib.CheckCollisionCircleRec(token.Position, 20, player2.GetBounds()))
                 {
                     if (player2.ChallengeManager.GetActiveChallenge() != null)
                         player2.CaptureToken(token.Value);
+
+                    tokens.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                if (Raylib.CheckCollisionCircleRec(token.Position, 20, player3.GetBounds()))
+                {
+                    if (player3.ChallengeManager.GetActiveChallenge() != null)
+                        player3.CaptureToken(token.Value);
 
                     tokens.RemoveAt(i);
                     i--;

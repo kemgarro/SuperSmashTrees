@@ -21,6 +21,7 @@ class Program
         Scene currentScene = Scene.Menu;
         CharacterOption? selected1 = null;
         CharacterOption? selected2 = null;
+        CharacterOption? selected3 = null;
 
         while (!Raylib.WindowShouldClose() && currentScene != Scene.Exit)
         {
@@ -60,6 +61,7 @@ class Program
                     {
                         selected1 = selector.Player1Character;
                         selected2 = selector.Player2Character;
+                        selected3 = selector.Player3Character;
                         currentScene = Scene.Game;
                     }
                     else
@@ -73,7 +75,7 @@ class Program
                     {
                         GameManager game = new GameManager(
                             Raylib.GetScreenWidth(), Raylib.GetScreenHeight(),
-                            selected1, selected2
+                            selected1, selected2, selected3
                         );
                         game.Run();  // ✅ El juego se crea desde cero cada vez
                     }

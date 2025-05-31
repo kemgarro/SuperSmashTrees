@@ -11,6 +11,7 @@ namespace SuperSmashTrees.UI
         private readonly CharacterOption[] availableCharacters;
         private int selectedIndexPlayer1 = 0;
         private int selectedIndexPlayer2 = 1;
+        private int selectedIndexPlayer3 = 2;
 
         private readonly int screenWidth;
         private readonly int screenHeight;
@@ -19,6 +20,7 @@ namespace SuperSmashTrees.UI
         public bool SelectionDone { get; private set; } = false;
         public CharacterOption Player1Character => availableCharacters[selectedIndexPlayer1];
         public CharacterOption Player2Character => availableCharacters[selectedIndexPlayer2];
+        public CharacterOption Player3Character => availableCharacters[selectedIndexPlayer3];
 
         public CharacterSelect(int width, int height)
         {
@@ -37,12 +39,14 @@ namespace SuperSmashTrees.UI
 
         private bool player1Confirmed = false;
         private bool player2Confirmed = false;
+        private bool player3Confirmed = false;
 
         public void Update()
         {
             if (!player1Confirmed && Raylib.IsKeyPressed(KeyboardKey.Enter)) player1Confirmed = true;
             if (!player2Confirmed && Raylib.IsKeyPressed(KeyboardKey.Space)) player2Confirmed = true;
-            if (player1Confirmed && player2Confirmed) SelectionDone = true;
+            if (!player3Confirmed && Raylib.IsKeyPressed(KeyboardKey.O)) player3Confirmed = true;
+            if (player1Confirmed && player2Confirmed && player3Confirmed) SelectionDone = true;
 
             if (!player1Confirmed)
             {
@@ -53,6 +57,11 @@ namespace SuperSmashTrees.UI
             {
                 if (Raylib.IsKeyPressed(KeyboardKey.A)) selectedIndexPlayer2 = (selectedIndexPlayer2 - 1 + availableCharacters.Length) % availableCharacters.Length;
                 if (Raylib.IsKeyPressed(KeyboardKey.D)) selectedIndexPlayer2 = (selectedIndexPlayer2 + 1) % availableCharacters.Length;
+            }
+            if (!player3Confirmed)
+            {
+                if (Raylib.IsKeyPressed(KeyboardKey.J)) selectedIndexPlayer3 = (selectedIndexPlayer3 - 1 + availableCharacters.Length) % availableCharacters.Length;
+                if (Raylib.IsKeyPressed(KeyboardKey.L)) selectedIndexPlayer3 = (selectedIndexPlayer3 + 1) % availableCharacters.Length;
             }
         }
 
@@ -79,6 +88,7 @@ namespace SuperSmashTrees.UI
 
             DrawPlayerSelector("Jugador 1", selectedIndexPlayer1, (int)(screenWidth * 0.35f), 450);
             DrawPlayerSelector("Jugador 2", selectedIndexPlayer2, (int)(screenWidth * 0.65f), 450);
+            DrawPlayerSelector("Jugador 3", selectedIndexPlayer3, (int)(screenWidth * 0.5f), 600);
 
         }
 

@@ -192,7 +192,7 @@ namespace SuperSmashTrees.Core
                 start = new Vector2(ground.Rect.X + ground.Rect.Width / 2, y);
             }
 
-            PlayerControls controls;
+            IPlayerControls controls;
 
             if (playerNumber == 1)
             {
@@ -204,7 +204,7 @@ namespace SuperSmashTrees.Core
             }
             else // jugador 3 con nuevas teclas (puedes ajustar)
             {
-                controls = new PlayerControls(KeyboardKey.L, KeyboardKey.J, KeyboardKey.I, KeyboardKey.K);
+                controls = new GamepadControls(0);
             }
 
             string basePath = $"Assets/Sprites/Characters/{opt.Name}";
